@@ -5176,5 +5176,18 @@ let savedView = '3d'; try { savedView = localStorage.getItem('asa-base-planner:v
 setView(savedView);
 </script>
 <footer class="siteFoot">Fan-made tool for ARK: Survival Ascended, not affiliated with Studio Wildcard. <a href="#guide">Guide</a> · <a href="#about">About</a> · <a href="#contact">Contact</a></footer>
+
+<!-- Mobile notice: the 3D planner is designed for desktop -->
+<style>
+#mobile-notice{display:none;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;
+background:#1f2937;color:#fff;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px 44px 12px 14px;
+border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+#mobile-notice button{position:absolute;top:6px;right:8px;background:none;border:0;color:#fff;font-size:20px;line-height:1;cursor:pointer;padding:6px}
+@media (max-width:768px){#mobile-notice{display:block}}
+</style>
+<div id="mobile-notice" role="status">
+  <strong>Best on a computer:</strong> ASA Base Planner is a 3D building tool designed for desktop with a mouse and keyboard. You can look around on your phone, but for the full experience, open it on a computer.
+  <button type="button" aria-label="Close notice" onclick="this.parentNode.style.display='none'">&times;</button>
+</div>
 </body>
 </html>
