@@ -1077,6 +1077,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
             <button id="selMirY" title="Mirror front–back">Mirror ↕</button>
             <button id="selCopy" title="Copy and paste somewhere else (Ctrl+D)">Copy</button>
             <button id="selMove" title="Pick it up and put it somewhere else (T)" data-ktitle="Pick it up and put it somewhere else ({move})">Move</button>
+            <button id="selCode" title="Copy the Template Hammer code for just these pieces, to paste into the game">Copy code</button>
           </div>
           <div class="selBtns" id="selUnlockRow" hidden><button id="selUnlock" class="primary">Make imported pieces movable</button></div>
           <div class="selRow" id="selRepRow"><button id="selRepeat" title="Stack copies on top">Repeat up</button>
@@ -1351,10 +1352,12 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
         <h2>Template code</h2>
         <div class="row"><span>Name</span></div>
         <input type="text" id="tName" value="PvP base">
+        <p class="note">To copy just part of the build, select it (in Select, drag a box round it) and click <b>Copy the selection only</b>, or press <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
         <div class="partsBox" id="partsBox" hidden></div>
         <textarea id="out" readonly aria-label="Template code"></textarea>
         <div class="actions" style="margin-top:8px">
           <button class="primary" id="copy">Copy code</button>
+          <button id="copySel" title="Copy the code for just the pieces you've selected" disabled>Copy the selection only</button>
           <span class="note" id="copyMsg" aria-live="polite"></span>
         </div>
       </section>
@@ -1393,6 +1396,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
   <ul>
     <li><b>Turn</b> and <b>Mirror</b> flip a section around; turrets keep facing out.</li>
     <li><b>Copy</b> picks the section up so you can drop a copy anywhere else.</li>
+    <li><b>Copy code</b> copies the Template Hammer code for just the selected part, to paste into the game on its own. The pillars under its beams, the thatch behind its sideways turrets and, if it reaches the top floor, the roof over it come along.</li>
     <li><b>Move</b> (<span data-k="move">T</span>) picks the section itself up: point where it goes and click. <span data-k="turn">R</span> turns it and <span data-k="mirror">M</span> mirrors it while you hold it, Esc puts it back.</li>
     <li><b>Whole build</b> (Build tab) turns, mirrors or moves everything at once.</li>
     <li><b>Import a template</b> (Create tab): paste a Template Hammer export and click <b>Add to my build</b>. You hold the whole import like a paste, turn it with <span data-k="turn">R</span>, and click to drop it onto what you've built, on whatever floor you point at. Its foundations, walls, doorframes and ceilings become normal planner pieces you can build on; everything else (turrets, mod pieces, skins and paint) is kept exactly. <b>Replace my build</b> starts fresh from the import instead.</li>
@@ -1434,7 +1438,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
     <tbody>
       <tr><td><kbd data-k="build">B</kbd> <kbd data-k="select">V</kbd> <kbd data-k="delete">X</kbd> <kbd data-k="camera">H</kbd> <kbd data-k="walk">G</kbd></td><td>Build, Select, Delete, Camera, Walk</td></tr>
       <tr><td><kbd data-k="turn">R</kbd> / <kbd data-k="mirror">M</kbd></td><td>Turn or mirror the selection (or the copy you're about to paste)</td></tr>
-      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy and paste</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy the selection and paste it in the planner. Ctrl+C also puts the Template Hammer code for just that part on your clipboard.</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Copy the selection and paste it straight away</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select everything you can see</td></tr>
       <tr><td><kbd>Delete</kbd></td><td>Delete the selection</td></tr>
@@ -2784,7 +2788,7 @@ function build(){
       const a = f.yaw*Math.PI/180;
       const ex = Math.round(f.x - Math.cos(a)*CAL.faceOut), ey = Math.round(f.y - Math.sin(a)*CAL.faceOut);
       const z = 240 + 300*(f.lvl*H + Math.round((+f.zOff || 0)/300));
-      thatchSpots.set(`${ex}|${ey}|${z}`, {x:ex, y:ey, z, yaw:f.yaw});
+      thatchSpots.set(`${ex}|${ey}|${z}`, {x:ex, y:ey, z, yaw:f.yaw, fid:f.id});
     }
   }
 
@@ -2817,8 +2821,8 @@ function build(){
         const spot = `${x}|${y}|${z}`;
         const solid = i>0 || type==='wall';
         if(thatchSpots.has(spot)){
-          thatchSpots.delete(spot);
-          if(!solid){ add('thatch', x, y, z, yaw); continue; }         // solid walls can hold a turret already
+          const t = thatchSpots.get(spot); thatchSpots.delete(spot);
+          if(!solid){ add('thatch', x, y, z, yaw); list[list.length - 1].own = ['f:' + t.fid]; continue; }   // solid walls can hold a turret already
         }
         if(solid){ add('wall', x, y, z, yaw); continue; }
         if(type==='door') add('door', x, y, z, yaw);
@@ -2827,18 +2831,20 @@ function build(){
       }
     }
     SK = null;
+    const beamsAt = new Map();                                           // corner -> the beams resting on it
+    for(const [k, t] of S.edges[s]) if(t === 'beam') for(const q of edgeCorners(k)){ if(!beamsAt.has(q)) beamsAt.set(q, []); beamsAt.get(q).push(`e:${s}:${k}`); }
     for(const q of postCorners(s)){                                     // thin pillars holding the beams up
       const [c,r] = q.split(',').map(Number);
-      for(let i=0;i<H;i++) add('post', c*300-150, r*300-150, 240 + 300*(s*H + i), 0);
+      for(let i=0;i<H;i++){ add('post', c*300-150, r*300-150, 240 + 300*(s*H + i), 0); list[list.length - 1].own = beamsAt.get(q) || []; }
     }
   }
   SK = null;
-  for(const t of thatchSpots.values()){ LV = Math.floor((t.z - 90)/(300*H)); add('thatch', t.x, t.y, t.z, t.yaw); }
+  for(const t of thatchSpots.values()){ LV = Math.floor((t.z - 90)/(300*H)); add('thatch', t.x, t.y, t.z, t.yaw); list[list.length - 1].own = ['f:' + t.fid]; }
   LV = S.stories;
   if(S.roof){
     for(const k of footprint(S.stories-1)){
       const [c,r] = k.split(',').map(Number);
-      if(inGrid(c,r)) add('ceil', c*300, r*300, ceilZ(S.stories), 0);
+      if(inGrid(c,r)){ add('ceil', c*300, r*300, ceilZ(S.stories), 0); list[list.length - 1].roofCell = [c, r]; }
     }
   }
   for(const f of S.free){
@@ -2856,7 +2862,16 @@ function build(){
     const xs=list.map(e=>e.x), ys=list.map(e=>e.y);
     cx=(Math.min(...xs)+Math.max(...xs))/2; cy=(Math.min(...ys)+Math.max(...ys))/2;
   }
-  const entries = list.map(e => ({
+  const entries = list.map(e => entryOf(e, cx, cy));
+  if(S.imp) entries.unshift(...S.imp.raw);
+  const tpl = {dataVersion: 1, name: $('tName').value || 'base', creator: S.imp ? (S.imp.creator || 'AI') : 'AI',
+    description: '', miscData: '', snapOverrides: [], entries};
+  return {tpl, list};
+}
+
+// one piece as a Template Hammer entry, placed relative to (cx, cy)
+function entryOf(e, cx, cy){
+  return {
     structure: e.path,
     loc: {x: e.x - cx, y: e.y - cy, z: outZ(e.z)},
     rot: {pitch: e.pitch||0, yaw: e.yaw, roll: e.roll||0},
@@ -2864,11 +2879,43 @@ function build(){
     skinData: {floatParams: [], stringParams: [], objectParams: [], nameParams: []},
     colors: [], containerName: "", miscEntryData: "",
     ...(e.extra || {})                                                     // an imported piece's skin, paint and so on
-  }));
-  if(S.imp) entries.unshift(...S.imp.raw);
-  const tpl = {dataVersion: 1, name: $('tName').value || 'base', creator: S.imp ? (S.imp.creator || 'AI') : 'AI',
-    description: '', miscData: '', snapOverrides: [], entries};
-  return {tpl, list};
+  };
+}
+// The Template Hammer code for just these pieces, with the automatic pieces that belong to them (the pillars under their
+// beams, the thatch walls behind their sideways turrets, and the roof over them when the top floor is part of it).
+// Pieces are where they are in the full template, just lined up on the middle of the part.
+function selectionTemplate(sks){
+  const sel = new Set(sks), {list} = build(), top = S.stories - 1;
+  // the roof goes with the part if the part reaches the top floor: the roof squares over what's selected up there
+  let box = null;
+  const grow = (c, r) => { box = box ? [Math.min(box[0], c), Math.min(box[1], r), Math.max(box[2], c), Math.max(box[3], r)] : [c, r, c, r]; };
+  for(const sk of sel){
+    const [t, a, b] = sk.split(':');
+    if(t === 'c' && +a === top){ const [c, r] = b.split(',').map(Number); grow(c, r); }
+    else if(t === 'e' && +a === top){ const [o, c, r] = b.split(','); if(o === 'v'){ grow(+c - 1, +r); grow(+c, +r); } else { grow(+c, +r - 1); grow(+c, +r); } }
+    else if(t === 'f'){ const f = S.free.find(q => q.id === +a); if(f && (f.lvl === 'roof' || f.lvl === top)) grow(Math.round(f.x/300), Math.round(f.y/300)); }
+  }
+  const inBox = rc => box && rc[0] >= box[0] && rc[0] <= box[2] && rc[1] >= box[1] && rc[1] <= box[3];
+  const pick = list.filter(e => (e.sk && sel.has(e.sk)) || (e.own && e.own.some(o => sel.has(o))) || (e.roofCell && inBox(e.roofCell)));
+  let cx = 0, cy = 0;
+  if(pick.length){ const xs = pick.map(e => e.x), ys = pick.map(e => e.y); cx = (Math.min(...xs) + Math.max(...xs))/2; cy = (Math.min(...ys) + Math.max(...ys))/2; }
+  const tpl = {dataVersion:1, name:`${$('tName').value || 'base'} (part)`, creator:'AI', description:'', miscData:'', snapOverrides:[],
+    entries:pick.map(e => entryOf(e, cx, cy))};
+  return {tpl, n:pick.length, old:[...sel].filter(sk => sk.startsWith('i:')).length};
+}
+// copy just the selected part's template code to the clipboard
+async function copySelectionCode(btn){
+  const sks = [...UI.sel];
+  if(!sks.length) return flashHint('Select the part you want first: in Select, drag a box round it.');
+  const r = selectionTemplate(sks);
+  if(!r.n) return flashHint(r.old ? OLD_IMPORT_MSG : 'Nothing to copy there.');
+  if(r.n > TPL_CAP) return flashHint(`That part has ${r.n.toLocaleString()} pieces; the Template Hammer takes at most ${TPL_CAP.toLocaleString()}. Select a smaller part.`);
+  const ok = await copyText(JSON.stringify(r.tpl, null, '\t'));
+  flashHint(ok ? `Copied the code for just this part: ${r.n.toLocaleString()} ${r.n === 1 ? 'piece' : 'pieces'}. Paste it into the Template Hammer import.`
+    + (r.old ? ` (${r.old} old imported ${r.old === 1 ? 'piece was' : 'pieces were'} left out: make them movable first.)` : '')
+    : 'Couldn’t reach the clipboard. Use the Code tab instead.');
+  if(btn){ const t = btn.textContent; btn.textContent = ok ? 'Copied' : 'Couldn’t copy'; setTimeout(() => { btn.textContent = t; }, 1600); }
+  return ok;
 }
 
 /* ---- autosave: the design lives in this browser's storage ---- */
@@ -3959,6 +4006,7 @@ function syncSelection(){                                        // other panels
 }
 function updateSelCard(){
   const card = $('selCard'); if(!card) return;
+  $('copySel').disabled = !UI.sel.size;
   const n = UI.sel.size; card.hidden = !n || (PASTE.on && PASTE.mode === 'move'); if(card.hidden) return;
   let text;
   if(n === 1){ const e = entryFor([...UI.sel][0]); text = e ? `${nameOf(e)} · ${floorName(e.lv || 0)}` : '1 piece'; }
@@ -4437,6 +4485,8 @@ $('selMirX').onclick = () => transformSelection('mx');
 $('selMirY').onclick = () => transformSelection('my');
 $('selCopy').onclick = () => { copySelection(); startPaste(); };
 $('selMove').onclick = () => startMove();
+$('selCode').onclick = e => copySelectionCode(e.currentTarget);
+$('copySel').onclick = e => copySelectionCode(e.currentTarget);
 $('selUnlock').onclick = unlockLegacyImport;
 $('allRot').onclick = () => wholeBuild('rot');
 $('allMirX').onclick = () => wholeBuild('mx');
@@ -4452,7 +4502,7 @@ window.addEventListener('keydown', e => {
   const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
   if(mod && k === 'z'){ e.preventDefault(); return e.shiftKey ? redo() : undo(); }
   if(mod && k === 'y'){ e.preventDefault(); return redo(); }
-  if(mod && k === 'c' && UI.sel.size){ e.preventDefault(); return copySelection(); }
+  if(mod && k === 'c' && UI.sel.size){ e.preventDefault(); copySelection(); if(mySel().length) copySelectionCode().then(ok => { if(ok) flashHint(`Copied ${CLIP.items.length} ${CLIP.items.length === 1 ? 'piece' : 'pieces'}: Ctrl+V pastes them here, and the Template Hammer code for just this part is on your clipboard.`); }); return; }
   if(mod && k === 'v' && V3.on){ e.preventDefault(); return startPaste(); }
   if(mod && k === 'd' && UI.sel.size && V3.on){ e.preventDefault(); copySelection(); return startPaste(); }
   if(mod && k === 'a' && V3.on){ e.preventDefault(); setMode('select'); return selectAllVisible(); }
