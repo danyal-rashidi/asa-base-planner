@@ -2108,7 +2108,7 @@ $('dup').onclick = () => { const f = selected(); if(!f) return;
   const c = {...f, id:nextId++, x:f.x + ((typeof S.snap === 'number' && S.snap) ? S.snap : 75)}; S.free.push(c); S.sel = c.id; render(); };
 $('del').onclick = () => { S.free = S.free.filter(f => f.id!==S.sel); S.sel = null; render(); };
 window.addEventListener('keydown', e => {
-  if(!placing() || CTRL.open) return;
+  if(!placing() || CTRL.open || PASTE.on) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if(['INPUT','SELECT','TEXTAREA'].includes(tag)) return;
   const f = selected(); if(!f) return;
@@ -2591,7 +2591,7 @@ function importAdd(text){
 function importReplace(text){
   const t = parseTemplate(text); if(t.err) return t.err;
   if(PASTE.on) endPaste();
-  const was = {minFloors:S.minFloors, cur:S.cur};
+  const was = {minFloors:S.minFloors, cur:S.cur}, had = [...UI.sel];
   S.h = 1;                                                               // read it as one wall per floor, like the design it becomes
   const info = importItems(t.raw), items = info.items;
   const cs = items.map(it => it.x/300), rs = items.map(it => it.y/300);
@@ -2603,7 +2603,7 @@ function importReplace(text){
   ensureStories(); setGridSize(N);
   $('height').value = '1'; $('roof').checked = false;
   const placed = placeItems(items, 0);
-  if(!placed){ Object.assign(S, was); undoQuiet(); return 'That build is too big for the planner.'; }
+  if(!placed){ Object.assign(S, was); undoQuiet(had); return 'That build is too big for the planner.'; }
   $('stories').value = String(S.stories);
   $('tName').value = (t.obj.name || 'Imported build').trim();
   UI.sel.clear(); render();
@@ -2613,10 +2613,10 @@ function importReplace(text){
 function unlockLegacyImport(){
   if(!S.imp) return;
   const raw = S.imp.raw.map((r, i) => ({...r, loc:{x:S.imp.items[i].x, y:S.imp.items[i].y, z:S.imp.items[i].z}}));
-  const {items} = importItems(raw, {aligned:true});
+  const {items} = importItems(raw, {aligned:true}), had = [...UI.sel];
   bakeRoof(); S.imp = null;
   const placed = placeItems(items, 0);
-  if(!placed){ undoQuiet(); flashHint('Couldn’t unlock the imported pieces.'); return; }
+  if(!placed){ undoQuiet(had); flashHint('Couldn’t unlock the imported pieces.'); return; }
   setSelection(placed); setMode('select'); render();
   flashHint(`${placed.length} imported pieces can now be moved, turned and copied like any other.`);
 }
@@ -2892,6 +2892,11 @@ function restore(){
   S.cells = d.cells.map(a => new Set(a)); S.edges = d.edges.map(a => new Map(a));
   S.free = Array.isArray(d.free) ? d.free : []; nextId = d.nextId || (S.free.reduce((m,f) => Math.max(m, f.id), 0) + 1);
   S.gx = d.gx && typeof d.gx === 'object' ? d.gx : {};
+  for(const f of S.free) if(f.exact){                                     // saved by a short-lived version: same height, the usual way
+    if(f.kind !== 'custom'){ const lift = f.lvl === 'roof' ? CAL.surfaceLift : f.base === 'walltop' ? CAL.wallTopLift : f.base === 'beamtop' ? CAL.beamLift
+      : f.base === 'wallface' ? CAL.faceUp : CAL.surfaceLift; f.zOff = Math.round(((+f.zOff || 0) - lift)*1000)/1000; }
+    delete f.exact;
+  }
   ensureStories();
   $('stories').value = String(S.stories); $('height').value = String(S.h); $('size').value = String(S.N);
   $('roof').checked = S.roof; $('thatchBack').checked = S.thatchBack; $('beamPosts').checked = S.beamPosts;
@@ -3704,6 +3709,7 @@ const WALLISH = ['wall', 'thatch', 'dframe', 'door', 'ddoor'];
 function growTo(F, keepRoof){
   if(F < S.stories) return true;
   if(F > MAX_FLOORS - 1){ flashHint(`The planner goes up to ${MAX_FLOORS} floors.`); return false; }
+  liftHidden(S.stories, F + 1 - S.stories);                              // floors hidden with the Floors box stay hidden, above the new top
   while(S.stories <= F){
     const top = S.roof && !keepRoof ? [...footprint(S.stories - 1)] : [];
     S.stories++; ensureStories();
@@ -3920,6 +3926,7 @@ function setStatus(text){ const el = $('status3d'); if(el && el.textContent !== 
 function baseStatus(){ setStatus(MODE_HELP[UI.mode]()); }
 function setMode(m){
   if(m !== 'build' && PASTE.on) endPaste();
+  if(m === 'build' && PASTE.on) PASTE.tool = 'build';                     // chose Build on purpose: Esc keeps you there
   UI.mode = m; $('view3d').dataset.mode = m;
   if(typeof SNAP !== 'undefined'){ SNAP.list = []; SNAP.key = null; if(V3.ready) drawSnapDots(); }
   document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
@@ -4327,7 +4334,7 @@ function bind3D(cv){
       return;
     }
     ptrs.delete(e.pointerId);
-    if(orbit && orbit.right && !orbit.moved && e.type === 'pointerup'){         // right-click: quick delete
+    if(orbit && orbit.right && !orbit.moved && e.type === 'pointerup' && !PASTE.on){   // right-click: quick delete
       const h = hit3D(e, false, true);
       if(h){ if(h.o.sk) deleteMany([h.o.sk]); else explainAuto(h.o); }
     }
@@ -4596,16 +4603,15 @@ const OLD_IMPORT_MSG = 'These were imported before pieces could move. Click “M
 function transformSelection(op){
   const sks = mySel();
   if(!sks.length){ if(UI.sel.size) flashHint(OLD_IMPORT_MSG); return; }
-  const items = selItems(sks, true), [px, py] = pivotOf(items, op === 'rot' ? 300 : 150);
+  const items = selItems(sks, true), [px, py] = pivotOf(items, op === 'rot' ? 300 : 150), had = [...UI.sel];
   removeSks(sks); xform(items, op, px, py);
   const placed = placeItems(items, 0);
-  if(!placed){ undoQuiet(); return; }
+  if(!placed){ undoQuiet(had); return; }
   setSelection(placed.filter(skExists)); render();
   flashHint(op === 'rot' ? 'Turned 90°.' : 'Mirrored.');
 }
-function undoQuiet(){                                                // put things back as they were before a failed step
+function undoQuiet(keep = [...UI.sel]){                              // put things back as they were before a failed step
   if(!HIST.last) return;
-  const keep = [...UI.sel];
   applyHist(HIST.last);
   setSelection(keep.filter(skExists)); render();
 }         // put things back as they were before a failed step
@@ -4664,6 +4670,7 @@ function endPaste(dropped){
   Object.assign(PASTE, {on:false, group:null, mat:null, at:null, F:null, mode:'paste', move:null, skip:null, was:null, keep:null, tool:'build'});
   if(was){
     if(!dropped && tool !== 'build' && UI.mode === 'build') setMode(tool);   // back to the tool you were on, so a stray click doesn't build
+    if(!dropped && UI.sel.size) setSelection([...UI.sel].filter(sk => skExists(sk) && shown(sk)));
     updateSelCard();
   }
   frame3D();
@@ -4735,6 +4742,7 @@ function pasteAt(e){
   const items = cloneItems(PASTE.items).map(it => { const x = it.x + at.c*300, y = it.y + at.r*300;
     return {...it, s:it.s + at.F, x, y, f:it.f ? {...it.f, x, y} : undefined}; });
   const mode = PASTE.mode, move = PASTE.move, was = PASTE.was, keep = PASTE.keep, tool = PASTE.tool;
+  const had = [...UI.sel].filter(sk => !keep || shown(sk));               // the selection to give back if this fails
   endPaste(true);
   const back = () => { if(tool !== 'build') setMode(tool); baseStatus(); };
   if(mode === 'move' && piecesSig(move) !== was){                         // the lifted pieces changed while you held them
@@ -4744,7 +4752,7 @@ function pasteAt(e){
   const baked = mode === 'import' && bakeRoof();
   const placed = placeItems(items, 0);
   if(!placed){
-    undoQuiet(); back();
+    undoQuiet(had); back();
     if(mode === 'import') $('impNote').textContent = 'It didn’t fit there, so nothing was added. Click Add to my build to try again.';
     return;
   }
@@ -4752,13 +4760,14 @@ function pasteAt(e){
   setSelection(placed.filter(sk => skExists(sk) && shown(sk))); setMode('select'); render();
   const n = placed.length, one = n === 1, them = one ? 'it' : 'them', what = `${n} ${one ? 'piece' : 'pieces'}`, rep = placeItems.replaced;
   const keys = `${keyName(KEYS.turn)} turns ${them}, ${keyName(KEYS.move)} moves ${them} again.`
-    + (rep ? ` ${rep} ${rep === 1 ? 'spot' : 'spots'} already had a piece, which ${rep === 1 ? 'was' : 'were'} swapped for the new one.` : '');
+    + (rep ? ` ${rep} ${rep === 1 ? 'spot' : 'spots'} already had a piece, which ${rep === 1 ? 'was swapped for the new one' : 'were swapped for the new ones'}.` : '');
   if(mode === 'move') flashHint(`Moved ${what}. ${keys}`);
   else if(mode === 'import'){
     flashHint(`Added the import: ${what}, ${one ? 'selected' : 'all selected'}. ${keys}${baked ? ' Your roof is now real ceilings (Roof over top floor is off), so the roofs don’t double up.' : ''}`);
     $('impNote').textContent = `Added ${what} to your build. ${one ? 'It’s' : 'They’re'} selected: ${keys}`;
   }
-  else flashHint(`Pasted ${what}. ${one ? 'It’s' : 'They’re'} selected, so you can turn, move or repeat ${them}.`);
+  else flashHint(`Pasted ${what}. ${one ? 'It’s' : 'They’re'} selected, so you can turn, move or repeat ${them}.`
+    + (rep ? ` ${rep} ${rep === 1 ? 'spot' : 'spots'} already had a piece, which ${rep === 1 ? 'was swapped for the new one' : 'were swapped for the new ones'}.` : ''));
 }
 // is this piece in sight (not on a floor above the Floors box, not on the roof while the roof is off)?
 function shown(sk){
@@ -4793,13 +4802,14 @@ function wholeBuild(op){
   if(PASTE.on) endPaste();
   const sks = allMine();
   if(!sks.length) return flashHint(S.imp ? OLD_IMPORT_MSG : 'Nothing built yet.');
-  const stories = S.stories, hid = hiddenNow();
+  const stories = S.stories, hid = hiddenNow(), had = [...UI.sel];
   setSelection(sks);
   if(op === 'move'){ render(); return startMove(sks, {keep:true}); }
   const before = histState().json;
   transformSelection(op);
   const done = histState().json !== before;
   if(done){ if(S.stories !== stories){ S.stories = stories; ensureStories(); $('stories').value = String(stories); } setSelection(mySel().filter(sk => skExists(sk) && shown(sk))); render(); }
+  else { setSelection(had.filter(sk => skExists(sk) && shown(sk))); render(); }
   if(done) flashHint(`${op === 'rot' ? 'Turned the whole build 90°' : 'Mirrored the whole build'}${hid ? ', hidden floors and roof pieces included' : ''}.`
     + (S.imp ? ' The old import stays put until you make it movable (Create tab).' : ''));
 }
