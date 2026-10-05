@@ -1062,7 +1062,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
           <button data-mode="delete" aria-pressed="false" title="Delete (X)" data-ktitle="Delete ({delete})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span><kbd data-k="delete">X</kbd></button>
           <button data-mode="camera" aria-pressed="false" title="Camera (H)" data-ktitle="Camera ({camera})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Camera</span><kbd data-k="camera">H</kbd></button>
           <button id="walkBtn" title="Walk around inside (G)" data-ktitle="Walk around inside ({walk})"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 3 1M12 8l-1 7"/></svg><span>Walk</span><kbd data-k="walk">G</kbd></button>
-          <button id="piecesBtn" aria-pressed="false" title="Show the piece totals; hover one to see those pieces"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
+          <button id="piecesBtn" aria-pressed="false" title="Show the piece totals; hover one to see those pieces, click it to select them"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
           <button id="ctrlBtn" title="Change the keys and mouse speed"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M18 10h.5M7.5 14h9"/></svg><span>Controls</span></button>
           <span class="tsep" aria-hidden="true"></span>
           <button id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -1096,7 +1096,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
             <span id="walkHelp">WASD walk, Shift run, Space jump, F fly (Space up, C down). Click places at the crosshair; right-click or X removes. Q next snap point, E turn. 1 to 0 pick, I edits the hotbar, B stops building. Esc leaves.</span>
             <button id="walkBuild" aria-pressed="false">Building: off (B)</button><button id="walkExit">Exit walk</button></div>
         </div>
-        <div class="pieces3d" id="pieces3d" hidden><div class="p3head">Pieces <span>hover to find them</span></div><div id="limits3d" class="limits"></div><div id="pieceList"></div></div>
+        <div class="pieces3d" id="pieces3d" hidden><div class="p3head">Pieces <span>hover to find, click to select</span></div><div id="limits3d" class="limits"></div><div id="pieceList"></div></div>
         <div class="status3d" id="status3d" aria-live="polite"></div>
         <div class="hotbar" id="hotbar" role="toolbar" aria-label="Hotbar: press 1 to 0 to pick a piece">
           <div class="hbSlots" id="hbSlots"></div>
@@ -1342,7 +1342,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
       <section class="panel" data-tab="pieces" style="--accent:var(--m-pieces)">
         <h2>Pieces</h2>
         <div id="limits" class="limits"></div>
-        <p class="note">Hover a total to light those pieces up in 3D. Click to keep them lit, Shift-click to select them.</p>
+        <p class="note">Hover a total to light those pieces up in 3D. Click it to select them all (Shift-click adds another row), then copy their code, move, turn or delete them.</p>
         <div class="counts" id="counts"></div>
         <h3 class="subHead">Materials</h3>
         <div id="materials" class="materials"></div>
@@ -1388,7 +1388,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
     <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows along the bottom while you walk. Press a number key to pick that piece. Press <span data-k="hotbarEdit">I</span> (or click Edit) and then a slot to choose what goes on it. Your hotbar is saved in this browser.</dd>
     <dt><span class="modeTag" style="--m:var(--cyan)">Controls</span></dt><dd>The keyboard button above the 3D view lets you change any key, the camera and zoom speed, and invert the mouse. Your keys are saved in this browser.</dd>
     <dt><span class="modeTag" style="--m:var(--m-camera)">View size</span></dt><dd>Drag the bar under the 3D view to make it taller or shorter (double-click it to reset). Wide view hides the side panels, Full screen fills your screen, and Faster graphics helps on slower computers.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover one to light those pieces up in orange.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover one to light those pieces up in orange; click it to select them all (Shift-click adds another row), then copy their code, move, turn or delete them.</dd>
   </dl>
 
   <h2>Building faster</h2>
@@ -2882,18 +2882,18 @@ function entryOf(e, cx, cy){
   };
 }
 // The Template Hammer code for just these pieces, with the automatic pieces that belong to them (the pillars under their
-// beams, the thatch walls behind their sideways turrets, and the roof over them when the top floor is part of it).
+// beams, the thatch walls behind their sideways turrets, and the roof over them when the top floor's squares or walls are).
 // Pieces are where they are in the full template, just lined up on the middle of the part.
 function selectionTemplate(sks){
   const sel = new Set(sks), {list} = build(), top = S.stories - 1;
-  // the roof goes with the part if the part reaches the top floor: the roof squares over what's selected up there
+  // the roof goes with the part if it has squares or walls on the top floor: the roof squares over those
+  // (turrets on their own, say all the heavy turrets, come without it)
   let box = null;
   const grow = (c, r) => { box = box ? [Math.min(box[0], c), Math.min(box[1], r), Math.max(box[2], c), Math.max(box[3], r)] : [c, r, c, r]; };
   for(const sk of sel){
     const [t, a, b] = sk.split(':');
     if(t === 'c' && +a === top){ const [c, r] = b.split(',').map(Number); grow(c, r); }
     else if(t === 'e' && +a === top){ const [o, c, r] = b.split(','); if(o === 'v'){ grow(+c - 1, +r); grow(+c, +r); } else { grow(+c, +r - 1); grow(+c, +r); } }
-    else if(t === 'f'){ const f = S.free.find(q => q.id === +a); if(f && (f.lvl === 'roof' || f.lvl === top)) grow(Math.round(f.x/300), Math.round(f.y/300)); }
   }
   const inBox = rc => box && rc[0] >= box[0] && rc[0] <= box[2] && rc[1] >= box[1] && rc[1] <= box[3];
   const pick = list.filter(e => (e.sk && sel.has(e.sk)) || (e.own && e.own.some(o => sel.has(o))) || (e.roofCell && inBox(e.roofCell)));
@@ -4007,6 +4007,7 @@ function syncSelection(){                                        // other panels
 function updateSelCard(){
   const card = $('selCard'); if(!card) return;
   $('copySel').disabled = !UI.sel.size;
+  syncGroupPressed();
   const n = UI.sel.size; card.hidden = !n || (PASTE.on && PASTE.mode === 'move'); if(card.hidden) return;
   let text;
   if(n === 1){ const e = entryFor([...UI.sel][0]); text = e ? `${nameOf(e)} · ${floorName(e.lv || 0)}` : '1 piece'; }
@@ -5049,7 +5050,7 @@ $('walkExit').onclick = stopWalk;
 $('walkBuild').onclick = () => walkBuildToggle();
 
 
-/* ---- piece totals: hover one to light those pieces up in 3D, click to keep it lit, Shift-click to select them ---- */
+/* ---- piece totals: hover one to light those pieces up in 3D, click to select them (Shift-click adds more) ---- */
 const TURRET_KINDS = ['heavy', 'tek', 'csheavy', 'cstek', 'flyer'];
 const isCustomTurret = e => e.kind === 'custom' && ['heavy', 'tek', 'hive'].includes(shapeOf(e));   // e.g. an imported mod turret
 const isTurretEntry = e => TURRET_KINDS.includes(e.kind) || isCustomTurret(e);
@@ -5105,8 +5106,8 @@ function renderCounts(groups){
   LAST_GROUPS = groups;
   if(UI.hlPin && !groups.some(g => g.id === UI.hlPin)) UI.hlPin = null;
   const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  const chip = g => `<button type="button" class="cnt" data-g="${esc(g.id)}" aria-pressed="${UI.hlPin === g.id}" `
-    + `title="Hover to see them in 3D. Click to keep them lit, Shift-click to select them."><i class="sw" style="background:${groupSwatch(g.id)}"></i>${esc(g.label)} <b>${g.n}</b></button>`;
+  const chip = g => `<button type="button" class="cnt" data-g="${esc(g.id)}" aria-pressed="false" `
+    + `title="Hover to see them in 3D. Click to select them all; Shift-click adds them to what's selected."><i class="sw" style="background:${groupSwatch(g.id)}"></i>${esc(g.label)} <b>${g.n}</b></button>`;
   const cats = [...new Set(groups.map(g => g.cat))];
   const html = cats.map(c => `<div class="cntCat" data-cat="${c}"><div class="cntHead">${c}</div><div class="cntRow">${groups.filter(g => g.cat === c).map(chip).join('')}</div></div>`).join('');
   const empty = '<span class="note">Nothing built yet.</span>';
@@ -5114,6 +5115,7 @@ function renderCounts(groups){
   renderCounts.last = html || empty;
   $('counts').innerHTML = html || empty;
   $('pieceList').innerHTML = html || empty;
+  syncGroupPressed();
 }
 const HL_COLOR = '#ff7a18';
 // light up one group: its pieces turn orange, everything else fades back
@@ -5134,13 +5136,25 @@ function applyGroupHL(){
   UI.hover = null;
   frame3D();
 }
+// the selection keys of the pieces in a row of the totals
+function groupSks(g){ const m = groupMatch(g); return [...new Set(entries3D().filter(x => x.sk && m(x)).map(x => x.sk))]; }
+// a row shows pressed when all its pieces are selected (or, for automatic pieces, while they're kept lit)
+function syncGroupPressed(){
+  const btns = document.querySelectorAll('.cnt[data-g]'); if(!btns.length) return;
+  for(const b of btns){
+    const g = b.dataset.g;
+    let on = UI.hlPin === g;
+    if(!on && UI.sel.size){ const sks = groupSks(g); on = sks.length > 0 && sks.every(sk => UI.sel.has(sk)); }
+    if(b.getAttribute('aria-pressed') !== String(on)) b.setAttribute('aria-pressed', String(on));
+  }
+}
 function groupStatus(){
   const g = UI.hlHover || UI.hlPin; if(!g) return baseStatus();
   const info = LAST_GROUPS.find(x => x.id === g) || EXTRA_GROUPS[g], match = groupMatch(g), all = entries3D().filter(match);
   const hidden = all.filter(e => !visible3D(e)).length;
   setStatus(`${info ? info.label : 'Pieces'}: ${all.length} lit up in ${EXTRA_GROUPS[g] ? 'red' : 'orange'}`
     + (hidden ? ` (${hidden} on floors hidden by the Show slider)` : '')
-    + (UI.hlPin === g && !UI.hlHover ? '. Click the name again to stop.' : ''));
+    + (UI.hlPin === g && !UI.hlHover ? '. Click the name again to stop.' : groupSks(g).length ? '. Click to select them all.' : ''));
 }
 function setGroupHover(g){ if(UI.hlHover === g) return; UI.hlHover = g; applyGroupHL(); groupStatus(); }
 for(const id of ['counts', 'pieceList', 'checkOut', 'cmpOut']){
@@ -5149,19 +5163,32 @@ for(const id of ['counts', 'pieceList', 'checkOut', 'cmpOut']){
   box.addEventListener('pointerleave', () => setGroupHover(null));
   box.addEventListener('focusin', e => { const b = e.target.closest('.cnt'); if(b && V3.on) setGroupHover(b.dataset.g); });
   box.addEventListener('focusout', () => setGroupHover(null));
+  // click: select every piece in that row (Shift or Ctrl adds them to what's selected, or takes them out again);
+  // click the selected row again to clear it. Rows of automatic pieces can't be selected, so they stay lit instead.
   box.addEventListener('click', e => {
     const b = e.target.closest('.cnt'); if(!b) return;
     const g = b.dataset.g;
     if(!V3.on && V3.ok) setView('3d');
-    if(e.shiftKey){
-      const sks = entries3D().filter(x => x.sk && groupMatch(g)(x)).map(x => x.sk);
-      if(!sks.length) return flashHint('Those are added automatically, so they can’t be selected on their own.');
-      setMode('select'); setSelection(sks); render(); return;
+    if(PASTE.on) endPaste();
+    const sks = groupSks(g), info = LAST_GROUPS.find(x => x.id === g) || EXTRA_GROUPS[g], label = info ? info.label.toLowerCase() : 'pieces';
+    if(!sks.length){
+      UI.hlPin = UI.hlPin === g ? null : g;
+      renderCounts.last = null; applyGroupHL(); groupStatus(); syncGroupPressed();
+      if(UI.hlPin) flashHint(`The ${label} are added automatically, so they can’t be selected on their own: they come along when you select or copy what they belong to. They stay lit until you click again.`);
+      return;
     }
-    UI.hlPin = UI.hlPin === g ? null : g;
-    document.querySelectorAll('.cnt').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.g === UI.hlPin)));
-    renderCounts.last = null; applyGroupHL(); groupStatus();
-    if(id === 'counts' && UI.hlPin) $('view3d').scrollIntoView({block:'nearest', behavior:'smooth'});
+    const add = e.shiftKey || e.ctrlKey || e.metaKey, have = new Set(sks), allIn = sks.every(sk => UI.sel.has(sk));
+    let next;
+    if(add) next = allIn ? [...UI.sel].filter(sk => !have.has(sk)) : [...new Set([...UI.sel, ...sks])];
+    else next = allIn && UI.sel.size === sks.length ? [] : sks;
+    UI.hlPin = null;
+    setMode('select'); setSelection(next); render(); syncGroupPressed();
+    if(!next.length) return flashHint('Selection cleared.');
+    const hidden = entries3D().filter(x => x.sk && have.has(x.sk) && !visible3D(x)).length;
+    flashHint((add ? (allIn ? `Took the ${label} out of the selection. ` : `Added the ${label}: `) : `Selected the ${label}: `)
+      + (allIn && add ? `${next.length} ${next.length === 1 ? 'piece' : 'pieces'} still selected.` : `${next.length} ${next.length === 1 ? 'piece' : 'pieces'} selected`
+        + (hidden ? ` (${hidden} on floors hidden by the Show slider)` : '') + `. Copy code, Move, Turn or Delete them from the card, or Shift-click another row to add it.`));
+    if(id === 'counts') $('view3d').scrollIntoView({block:'nearest', behavior:'smooth'});
   });
 }
 function togglePieces(open){
