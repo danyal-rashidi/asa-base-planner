@@ -1706,8 +1706,10 @@ function footprint(s){
 }
 let BC_CACHE = null;                                                      // cleared on every change (build) and when the grid slides
 function buildCentre(){
-  if(BC_CACHE) return BC_CACHE;
-  return BC_CACHE = buildCentreNow();
+  const g = S.cells[0];
+  if(BC_CACHE && BC_CACHE.set === g && BC_CACHE.n === (g ? g.size : 0)) return BC_CACHE.c;
+  BC_CACHE = {set:g, n:g ? g.size : 0, c:buildCentreNow()};
+  return BC_CACHE.c;
 }
 function buildCentreNow(){
   if(S.imp && !S.cells[0].size) return S.imp.centre;
@@ -1728,7 +1730,7 @@ function setMaterial(m){
     : '<span class="warn">Paths are best guesses. Test a small build first.</span>';
 }
 function freeZ(f){
-  const H = S.h, isItem = f.kind !== 'custom' && !f.exact;                 // exact: imported, so it stays where the game had it
+  const H = S.h, isItem = f.kind !== 'custom';
   const lvl = f.lvl === 'roof' ? S.stories : f.lvl;
   let base;
   if(f.base === 'walltop' && f.lvl !== 'roof') base = 90 + 300*(lvl+1)*H + (isItem ? CAL.wallTopLift : 0);
@@ -2148,6 +2150,8 @@ $('copyBelow').onclick = () => {
   const target = curLvl();
   const source = isRoof() ? S.stories-1 : S.cur-1;
   if(!isRoof()){
+    for(const k of Object.keys(S.gx)) if(+k.split(':')[1] === S.cur) delete S.gx[k];
+    for(const [k, v] of Object.entries(S.gx)){ const [t, f, key] = k.split(':'); if(+f === S.cur - 1) S.gx[`${t}:${S.cur}:${key}`] = v; }
     S.cells[S.cur] = new Set(footprint(S.cur-1));
     S.edges[S.cur] = new Map(S.edges[S.cur-1]);
   }
@@ -2526,10 +2530,13 @@ function importItems(raw, opt = {}){
     }
     loose.push({p, s});
   }
-  for(const {p, s} of loose){                                            // (double doors stay loose too, so they keep the way they swing)
+  for(const {p, s} of loose){
+    if(p.path === P.ddoor && !p.extra && square(p) && H === 1 && near(p.z, 240 + 300*s)){   // a double door in an imported double doorframe
+      const k = `${s}|${keyAt({t:'e', x:p.x, y:p.y})}`, ed = edges.get(k);
+      if(ed && ed.type === 'dframe' && !ed.gx && near(ed.x, p.x) && near(ed.y, p.y)){ ed.type = 'ddoor'; continue; }
+    }
     const kind = (!p.extra && KIND[p.path]) || 'custom';
     const f = {kind, path:kind === 'custom' ? p.path : '', x:p.x, y:p.y, lvl:s, base:'surface', zOff:0, yaw:p.yaw, pitch:p.pitch, roll:p.roll};
-    if(kind !== 'custom') f.exact = true;
     if(kind === 'custom' && /Pillar_Flat/i.test(p.path) && !p.pitch && !p.roll && s >= 1 && near(p.z, 90 + 300*s*H)){ f.lvl = s - 1; f.base = 'beamtop'; }   // lying on the walls below
     f.zOff = Math.round((p.z - freeZ(f))*1000)/1000;
     if(p.extra) f.extra = p.extra;
@@ -2546,14 +2553,22 @@ function bakeRoof(){
   const top = [...footprint(S.stories - 1)], onRoof = S.free.filter(f => f.lvl === 'roof'), had = top.length > 0 || onRoof.length > 0;
   if(had){
     const R = S.stories;                                                 // the roof level becomes a real floor
+    liftHidden(R, 1);                                                    // floors hidden with the Floors box move up out of the way
     S.stories++; ensureStories();
-    S.cells[R] = new Set(top); S.edges[R] = new Map();                    // anything hidden up here (Floors box) stays out of the build
-    S.free = S.free.filter(f => f.lvl === 'roof' || !(typeof f.lvl === 'number' && f.lvl >= R));
-    for(const k of Object.keys(S.gx)) if(+k.split(':')[1] >= R) delete S.gx[k];
+    S.cells[R] = new Set(top); S.edges[R] = new Map();
     for(const f of onRoof){ f.lvl = R; f.base = 'surface'; }
   }
   S.roof = false; $('roof').checked = false; $('stories').value = String(S.stories);
   return had;
+}
+// Move everything on floors from..top up d floors (cells, walls, pieces and their paint), leaving those floors empty.
+function liftHidden(from, d){
+  if(S.cells.length <= from && !S.free.some(f => typeof f.lvl === 'number' && f.lvl >= from)) return;
+  while(S.cells.length < from){ S.cells.push(new Set()); S.edges.push(new Map()); }
+  S.cells.splice(from, 0, ...Array.from({length:d}, () => new Set()));
+  S.edges.splice(from, 0, ...Array.from({length:d}, () => new Map()));
+  for(const f of S.free) if(typeof f.lvl === 'number' && f.lvl >= from) f.lvl += d;
+  S.gx = Object.fromEntries(Object.entries(S.gx).map(([k, v]) => { const [t, f, key] = k.split(':'); return [+f >= from ? `${t}:${+f + d}:${key}` : k, v]; }));
 }
 function importNote(info, n){
   let msg = `${n} pieces${info.turrets ? ` (${info.turrets} turrets)` : ''}`;
@@ -2576,6 +2591,7 @@ function importAdd(text){
 function importReplace(text){
   const t = parseTemplate(text); if(t.err) return t.err;
   if(PASTE.on) endPaste();
+  const was = {minFloors:S.minFloors, cur:S.cur};
   S.h = 1;                                                               // read it as one wall per floor, like the design it becomes
   const info = importItems(t.raw), items = info.items;
   const cs = items.map(it => it.x/300), rs = items.map(it => it.y/300);
@@ -2587,7 +2603,7 @@ function importReplace(text){
   ensureStories(); setGridSize(N);
   $('height').value = '1'; $('roof').checked = false;
   const placed = placeItems(items, 0);
-  if(!placed){ undoQuiet(); return 'That build is too big for the planner.'; }
+  if(!placed){ Object.assign(S, was); undoQuiet(); return 'That build is too big for the planner.'; }
   $('stories').value = String(S.stories);
   $('tName').value = (t.obj.name || 'Imported build').trim();
   UI.sel.clear(); render();
@@ -3662,7 +3678,7 @@ function hit3D(e, ignoreFree, ignoreRoof, skip){                       // skip: 
   const m = new THREE.Matrix4(), nm = new THREE.Matrix3();
   for(const h of rayHits(e)){
     const o = h.object.userData.owners && h.object.userData.owners[h.instanceId];
-    if(!o || (ignoreFree && o.fid) || (ignoreRoof && o.auto) || (skip && o.sk && skip.has(o.sk))) continue;
+    if(!o || (ignoreFree && o.fid) || (ignoreRoof && o.auto) || (skip && (!o.sk || skip.has(o.sk)))) continue;
     h.object.getMatrixAt(h.instanceId, m);
     const n = h.face.normal.clone().applyMatrix3(nm.getNormalMatrix(m)).normalize();
     return {o, shape:shapeOf(o), p:{x:h.point.x, y:-h.point.y, z:h.point.z}, n:{x:n.x, y:-n.y, z:n.z}};
@@ -3883,7 +3899,7 @@ function syncViewSlider(){
 $('viewTop').addEventListener('input', e => { V3.viewTop = +e.target.value; V3.viewAll = V3.viewTop >= levelsTotal(); syncViewSlider(); rebuild3D(); });
 
 $('storyTabs').addEventListener('click', () => { if(V3.ready){ cam.tz = planeZ(); frame3D(); } });   // a tab click moves the view to that floor
-['exSpire','exCage','exCore14','exCore14s','exCore6','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on) endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
+['exSpire','exCage','exCore14','exCore14s','exCore6','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on && id !== 'impBtn') endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
 ['genBtn', 'twBtn'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on) endPaste(); }));
 $('impFile').addEventListener('change', () => setTimeout(() => { if(PASTE.on) return; V3.lastCur = null; fit3D(); rebuild3D(); }, 300));
 if(!V3.ok) $('v3d').disabled = true;
@@ -4342,7 +4358,7 @@ function bind3D(cv){
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('pointerleave', () => {
     if(GHOST.visible){ GHOST.visible = false; frame3D(); } setHover(null);
-    if(PASTE.on){ if(PASTE.group){ PASTE.group.visible = false; frame3D(); } setStatus(pasteHelp(null)); } else baseStatus();
+    if(PASTE.on){ PASTE.at = null; if(PASTE.group){ PASTE.group.visible = false; frame3D(); } setStatus(pasteHelp(null)); } else baseStatus();
   });
   cv.addEventListener('wheel', e => { e.preventDefault(); if(!WALK.on) zoomCam(Math.exp(e.deltaY*0.0012*MOUSE.zoom)); }, {passive:false});
   cv.addEventListener('dblclick', e => {                              // double-click in Select: the whole floor
@@ -4446,7 +4462,7 @@ window.addEventListener('keydown', e => {
   if(k === KEYS.build) setMode('build'); else if(k === KEYS.select) setMode('select');
   else if(k === KEYS.delete) setMode('delete'); else if(k === KEYS.camera) setMode('camera');
   else if(k === 'escape'){ UI.hlPin = null; setSelection([]); render(); }
-  else if((k === 'delete' || k === 'backspace') && UI.sel.size){ e.preventDefault(); deleteMany([...UI.sel]); }
+  else if((k === 'delete' || k === 'backspace') && UI.sel.size && !PASTE.on){ e.preventDefault(); deleteMany([...UI.sel]); }
 });
 
 /* ================= building faster: copy/paste, rotate, mirror, repeat up, turret fill, growing grid ================= */
@@ -4558,9 +4574,11 @@ function placeItems(items, dFloor){
   if(top > MAX_FLOORS - 1){ flashHint(`The planner goes up to ${MAX_FLOORS} floors.`); return null; }
   growTo(top, true);
   const sks = [];
+  placeItems.replaced = 0;                                                // grid spots that already had a piece (it gets swapped out)
   for(const it of items){
     if(it.t === 'c' || it.t === 'e'){
       const s = it.s + dFloor, k = keyAt(it), sk = `${it.t}:${s}:${k}`;
+      if(it.t === 'c' ? S.cells[s].has(k) : S.edges[s].has(k)) placeItems.replaced++;
       if(it.t === 'c') S.cells[s].add(k); else S.edges[s].set(k, it.type);
       if(it.gx) S.gx[sk] = it.gx; else delete S.gx[sk];                  // its paint comes along; a plain piece put there has none
       sks.push(sk);
@@ -4585,7 +4603,12 @@ function transformSelection(op){
   setSelection(placed.filter(skExists)); render();
   flashHint(op === 'rot' ? 'Turned 90°.' : 'Mirrored.');
 }
-function undoQuiet(){ if(HIST.last) applyHist(HIST.last); }         // put things back as they were before a failed step
+function undoQuiet(){                                                // put things back as they were before a failed step
+  if(!HIST.last) return;
+  const keep = [...UI.sel];
+  applyHist(HIST.last);
+  setSelection(keep.filter(skExists)); render();
+}         // put things back as they were before a failed step
 function repeatUp(times){
   const sks = mySel();
   if(!sks.length) return flashHint('Select some pieces first.');
@@ -4611,15 +4634,24 @@ function copySelection(){
 }
 // Holding pieces to put down somewhere: a paste, a move or an import. A see-through copy of the real pieces follows the
 // cursor, snapped to whole foundations, on the floor you point at.
-const PASTE = {on:false, items:null, group:null, mat:null, at:null, mode:'paste', move:null, skip:null, was:null, F:null, keep:null};
+const PASTE = {on:false, items:null, group:null, mat:null, at:null, mode:'paste', move:null, skip:null, was:null, F:null, keep:null, tool:'build'};
+// what a set of pieces is right now, to tell whether a held move still matches the build
+function piecesSig(sks){
+  return JSON.stringify(sks.map(sk => { const [t, a, b] = sk.split(':');
+    if(t === 'c') return [sk, !!(S.cells[+a] && S.cells[+a].has(b)), S.gx[sk] || null];
+    if(t === 'e') return [sk, S.edges[+a] ? S.edges[+a].get(b) || null : null, S.gx[sk] || null];
+    if(t === 'f') return [sk, S.free.find(f => f.id === +a) || null];
+    return [sk]; }));
+}
 function startPaste(items, opt = {}){
   items = items || CLIP.items;
   if(!items) return flashHint('Copy something first (select it, then Ctrl+C).');
   if(!V3.on){ if(V3.ok) setView('3d'); if(!V3.on || !V3.ready) return; }   // holding pieces only works in the 3D view
   endPaste();
+  const tool = UI.mode;
   setMode('build');
   Object.assign(PASTE, {on:true, items:cloneItems(items), at:null, F:null, mode:opt.mode || 'paste', move:opt.move || null,
-    skip:opt.move ? new Set(opt.move) : null, was:opt.move ? histState().json : null, keep:opt.keep || null});
+    skip:opt.move ? new Set(opt.move) : null, was:opt.move ? piecesSig(opt.move) : null, keep:opt.keep || null, tool});
   buildPasteGhost(0);
   setStatus(pasteHelp(null));
   updateSelCard();
@@ -4628,15 +4660,19 @@ function endPaste(dropped){
   if(PASTE.group){ SCENE.remove(PASTE.group); for(const m of PASTE.group.children) m.dispose && m.dispose(); }
   if(PASTE.mat) PASTE.mat.dispose();
   if(PASTE.on && PASTE.mode === 'import' && !dropped) $('impNote').textContent = 'Import cancelled. Click Add to my build to pick it up again.';
-  const was = PASTE.on;
-  Object.assign(PASTE, {on:false, group:null, mat:null, at:null, F:null, mode:'paste', move:null, skip:null, was:null, keep:null});
-  if(was) updateSelCard();
+  const was = PASTE.on, tool = PASTE.tool;
+  Object.assign(PASTE, {on:false, group:null, mat:null, at:null, F:null, mode:'paste', move:null, skip:null, was:null, keep:null, tool:'build'});
+  if(was){
+    if(!dropped && tool !== 'build' && UI.mode === 'build') setMode(tool);   // back to the tool you were on, so a stray click doesn't build
+    updateSelCard();
+  }
   frame3D();
 }
 // the held pieces as the planner will build them when dropped on floor F, around the point they hang from
 function pasteEntries(items, F){
   const P = PATHS(), H = S.h, out = [];
   for(const it of items){
+    if(it.hid) continue;                                                   // stays hidden after the drop (Floors box / roof off)
     const s = it.s + F;
     if(it.t === 'c') out.push(s ? {kind:'ceil', path:P.ceil, x:it.x, y:it.y, z:90 + 300*s*H} : {kind:'floor', path:P.floor, x:it.x, y:it.y, z:40});
     else if(it.t === 'e'){
@@ -4698,25 +4734,38 @@ function pasteAt(e){
   const at = pastePick(e); if(!at) return;
   const items = cloneItems(PASTE.items).map(it => { const x = it.x + at.c*300, y = it.y + at.r*300;
     return {...it, s:it.s + at.F, x, y, f:it.f ? {...it.f, x, y} : undefined}; });
-  const mode = PASTE.mode, move = PASTE.move, was = PASTE.was, keep = PASTE.keep;
+  const mode = PASTE.mode, move = PASTE.move, was = PASTE.was, keep = PASTE.keep, tool = PASTE.tool;
   endPaste(true);
-  if(mode === 'move' && histState().json !== was){                         // something changed while you held them
-    baseStatus(); return flashHint('The build changed while you were holding those, so nothing moved. Select them and move them again.');
+  const back = () => { if(tool !== 'build') setMode(tool); baseStatus(); };
+  if(mode === 'move' && piecesSig(move) !== was){                         // the lifted pieces changed while you held them
+    back(); return flashHint('Those pieces changed while you were holding them, so nothing moved. Select them and move them again.');
   }
   if(mode === 'move') removeSks(move);                                   // a move takes them from where they were
   const baked = mode === 'import' && bakeRoof();
   const placed = placeItems(items, 0);
-  if(!placed){ undoQuiet(); return; }
-  if(keep){ S.stories = Math.max(1, keep.stories + at.F - keep.lo); S.minFloors = Math.min(S.minFloors || 1, S.stories); ensureStories(); $('stories').value = String(S.stories); }
-  setSelection(placed.filter(skExists)); setMode('select'); render();
-  const n = placed.length, them = n === 1 ? 'it' : 'them';
-  const keys = `${keyName(KEYS.turn)} turns ${them}, ${keyName(KEYS.move)} moves ${them} again.`;
-  if(mode === 'move') flashHint(`Moved ${n} ${n === 1 ? 'piece' : 'pieces'}. ${keys}`);
-  else if(mode === 'import'){
-    flashHint(`Added the import: ${n} pieces, all selected. ${keys}${baked ? ' Your roof is now real ceilings (Roof over top floor is off), so the roofs don’t double up.' : ''}`);
-    $('impNote').textContent = `Added ${n} pieces to your build. They’re selected: ${keys}`;
+  if(!placed){
+    undoQuiet(); back();
+    if(mode === 'import') $('impNote').textContent = 'It didn’t fit there, so nothing was added. Click Add to my build to try again.';
+    return;
   }
-  else flashHint(`Pasted ${n} pieces. They’re selected, so you can turn, move or repeat them.`);
+  if(keep){ S.stories = Math.max(1, keep.stories + at.F - keep.lo); S.minFloors = Math.min(S.minFloors || 1, S.stories); ensureStories(); $('stories').value = String(S.stories); }
+  setSelection(placed.filter(sk => skExists(sk) && shown(sk))); setMode('select'); render();
+  const n = placed.length, one = n === 1, them = one ? 'it' : 'them', what = `${n} ${one ? 'piece' : 'pieces'}`, rep = placeItems.replaced;
+  const keys = `${keyName(KEYS.turn)} turns ${them}, ${keyName(KEYS.move)} moves ${them} again.`
+    + (rep ? ` ${rep} ${rep === 1 ? 'spot' : 'spots'} already had a piece, which ${rep === 1 ? 'was' : 'were'} swapped for the new one.` : '');
+  if(mode === 'move') flashHint(`Moved ${what}. ${keys}`);
+  else if(mode === 'import'){
+    flashHint(`Added the import: ${what}, ${one ? 'selected' : 'all selected'}. ${keys}${baked ? ' Your roof is now real ceilings (Roof over top floor is off), so the roofs don’t double up.' : ''}`);
+    $('impNote').textContent = `Added ${what} to your build. ${one ? 'It’s' : 'They’re'} selected: ${keys}`;
+  }
+  else flashHint(`Pasted ${what}. ${one ? 'It’s' : 'They’re'} selected, so you can turn, move or repeat ${them}.`);
+}
+// is this piece in sight (not on a floor above the Floors box, not on the roof while the roof is off)?
+function shown(sk){
+  const [t, a] = sk.split(':');
+  if(t === 'c' || t === 'e') return +a < S.stories;
+  if(t === 'f'){ const f = S.free.find(q => q.id === +a); return !!f && (f.lvl === 'roof' ? S.roof : f.lvl < S.stories); }
+  return true;
 }
 function turnPaste(op){ if(!PASTE.on) return; xform(PASTE.items, op, 0, 0); buildPasteGhost(PASTE.at ? PASTE.at.F : 0); pasteGhost(null); }
 // pick the selection up and put it down somewhere else (Esc leaves it where it was)
@@ -4724,7 +4773,8 @@ function startMove(sks, opt = {}){
   sks = sks || mySel();
   if(!sks.length) return flashHint(UI.sel.size ? OLD_IMPORT_MSG : 'Select some pieces first.');
   const items = selItems(sks, true), lo = Math.min(...items.map(it => it.s)), [px, py] = pivotOf(items, 300);
-  const rel = items.map(it => ({...it, s:it.s - lo, x:it.x - px, y:it.y - py, f:it.f ? {...it.f, x:it.x - px, y:it.y - py} : undefined}));
+  const hid = it => it.t === 'f' ? (it.f.lvl === 'roof' ? !S.roof : it.s >= S.stories) : it.s >= S.stories;
+  const rel = items.map(it => ({...it, hid:hid(it), s:it.s - lo, x:it.x - px, y:it.y - py, f:it.f ? {...it.f, x:it.x - px, y:it.y - py} : undefined}));
   startPaste(rel, {mode:'move', move:sks, keep:opt.keep ? {stories:S.stories, lo} : null});
 }
 // Every piece in the design, including ones out of sight: floors above the Floors box, and things on the roof while
@@ -4749,7 +4799,7 @@ function wholeBuild(op){
   const before = histState().json;
   transformSelection(op);
   const done = histState().json !== before;
-  if(done && S.stories !== stories){ S.stories = stories; ensureStories(); $('stories').value = String(stories); setSelection(sks.length ? mySel().filter(skExists) : []); render(); }
+  if(done){ if(S.stories !== stories){ S.stories = stories; ensureStories(); $('stories').value = String(stories); } setSelection(mySel().filter(sk => skExists(sk) && shown(sk))); render(); }
   if(done) flashHint(`${op === 'rot' ? 'Turned the whole build 90°' : 'Mirrored the whole build'}${hid ? ', hidden floors and roof pieces included' : ''}.`
     + (S.imp ? ' The old import stays put until you make it movable (Create tab).' : ''));
 }
@@ -6027,7 +6077,9 @@ const KEY_ACTIONS = [
   ['walkBuild', 'Building on and off', 'b', 'w'], ['walkRemove', 'Remove what you aim at', 'x', 'w'], ['hotbarEdit', 'Edit the hotbar', 'i', 'w']];
 const KEY_DEFAULT = Object.fromEntries(KEY_ACTIONS.map(a => [a[0], a[2]]));
 const MOUSE_DEFAULT = {orbit:1, zoom:1, look:1, invOrbit:false, invLook:false};
-const KEYS = {...KEY_DEFAULT}, MOUSE = {...MOUSE_DEFAULT}, CTRL = {open:false, wait:null, esc:false};
+const KEYS = {...KEY_DEFAULT}, MOUSE = {...MOUSE_DEFAULT};
+// open: read straight off the dialog (its 'close' event can arrive late while the 3D view is busy drawing)
+const CTRL = {wait:null, esc:false, get open(){ const d = document.getElementById('ctrlDlg'); return !!(d && d.open); }};
 const CTRL_KEY = 'asa-base-planner:controls';
 const KEY_NAMES = {' ':'Space', shift:'Shift', pageup:'Page Up', pagedown:'Page Down', home:'Home', end:'End', insert:'Insert'};
 const KEY_RESERVED = new Set(['escape', 'tab', 'enter', 'delete', 'backspace', 'control', 'meta', 'alt', 'altgraph', 'capslock', 'contextmenu', 'dead',
@@ -6093,7 +6145,7 @@ function openControls(){
   if(WALK.on) stopWalk();
   CTRL.wait = null; ctrlMsg(''); renderControls(); syncMouseUI();
   if(d.showModal) d.showModal(); else d.setAttribute('open', '');
-  CTRL.open = true; $('ctrlBtn').setAttribute('aria-expanded', 'true');
+  $('ctrlBtn').setAttribute('aria-expanded', 'true');
 }
 function closeControls(){ const d = $('ctrlDlg'); CTRL.wait = null; if(d.open){ if(d.close) d.close(); else { d.removeAttribute('open'); d.dispatchEvent(new Event('close')); } } }
 { // what's saved from last time; if it doesn't add up, back to the usual keys
@@ -6116,7 +6168,7 @@ $('ctrlBtn').onclick = openControls;
 $('ctrlClose').onclick = closeControls;
 $('ctrlDone').onclick = closeControls;
 $('guideCtrl').onclick = () => { location.hash = '#planner'; setTimeout(openControls, 60); };
-$('ctrlDlg').addEventListener('close', () => { CTRL.open = false; CTRL.wait = null; $('ctrlBtn').setAttribute('aria-expanded', 'false'); });
+$('ctrlDlg').addEventListener('close', () => { CTRL.wait = null; $('ctrlBtn').setAttribute('aria-expanded', 'false'); });
 $('ctrlDlg').addEventListener('cancel', e => { if(CTRL.wait || CTRL.esc) e.preventDefault(); });   // Esc while picking a key only stops picking
 $('ctrlDlg').addEventListener('click', e => { if(e.target === $('ctrlDlg')) closeControls(); });   // a click on the dark backdrop
 $('ctrlKeys').addEventListener('click', e => {
