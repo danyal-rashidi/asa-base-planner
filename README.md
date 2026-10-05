@@ -8,12 +8,15 @@ A browser-based 3D planner for designing bases in **ARK: Survival Ascended**. Pl
 
 ## Features
 
-- **3D and top-down plan views** with free camera, fit view, and a walk mode to look around the base at player height
+- **3D and top-down plan views** with free camera, fit view, and a walk mode to look around the base at player height; metal pieces reflect the sky, edges are bevelled and shadows are soft
 - **Piece library** grouped into categories: structure, doors, defense, utility, stone, Tek, farming, pillars and railings, and custom pieces
 - **Snapping options** that follow ARK's building rules (on top of walls, sideways on walls, full / half / quarter squares, or free placement)
 - **Tower generator** and **turret wall generator** for building common PvP layouts in a few clicks
 - **Turret coverage view** to check defensive coverage before placing
 - **Editing tools:** rotate, mirror, copy, repeat up, turret fill, and keyboard shortcuts for faster building
+- **Box select:** in Select mode, click and drag a box round any part of the build (or all of it) to select everything inside, on every floor that's showing
+- **Controls you can change:** every shortcut key can be rebound (handy on AZERTY keyboards), plus camera, zoom and walk-look speed and mouse invert, saved in the browser
+- **Contact form:** messages go to the site's Netlify Forms page (turn on form detection and an email notification in Netlify to get them in your inbox)
 - **Template import and export:** copy the finished design as Template Hammer code, or import an existing template to edit it
 - **Example designs** (core cage tower, turret spire, cage tower) to start from
 

@@ -455,6 +455,33 @@ body > .wrap{flex:1;width:100%}
 .row .actions{display:flex;gap:6px;flex-wrap:nowrap}
 #legend3d a,.note a{color:var(--m-build);font-weight:600}
 @media (max-width:640px){ .tools3d{gap:2px;padding:4px} .tools3d button{padding:6px 7px} .tools3d .tsep{margin:2px 1px} }
+/* controls: change the keys and mouse speeds */
+.ctrlDlg{width:min(640px, calc(100vw - 32px));max-height:calc(100vh - 40px);padding:0;border:1px solid var(--line);border-top:4px solid var(--cyan);border-radius:14px;
+  background:var(--panel);color:var(--ink);box-shadow:0 18px 50px rgba(0,0,0,.35);overflow:hidden}
+.ctrlDlg::backdrop{background:rgba(8,16,22,.55)}
+.ctrlHead{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--cyan) 10%, var(--panel))}
+.ctrlHead h2{margin:0;font-size:1.1rem}
+.ctrlHead span{color:var(--muted);font-size:.84rem}
+.ctrlBody{padding:6px 16px 16px;overflow:auto;max-height:calc(100vh - 110px)}
+.ctrlMsg{min-height:1.35em;margin:2px 0 4px;font-size:.86rem;font-weight:600;color:var(--m-pieces)}
+.ctrlMsg.ok{color:var(--m-walk)}
+.ctrlGroup h3{display:flex;align-items:center;gap:6px;font:600 .84rem "Chakra Petch",system-ui,sans-serif;margin:14px 0 4px;color:var(--cc, var(--cyan))}
+.ctrlGroup h3::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cc, var(--cyan))}
+.ctrlRows{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:0 18px}
+@media (max-width:600px){ .ctrlRows{grid-template-columns:1fr} }
+.ctrlRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.ctrlRow small{display:block;color:var(--muted);font-size:.76rem;line-height:1.2}
+.keyBtn{flex:none;min-width:5.2em;padding:4px 10px;font:600 .84rem/1.3 ui-monospace,Menlo,Consolas,monospace;border-bottom-width:2px}
+.keyBtn.changed{border-color:var(--cyan)}
+.keyBtn[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#06222c;animation:keyWait 1s ease-in-out infinite}
+@keyframes keyWait{50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){ .keyBtn[aria-pressed="true"]{animation:none} }
+.ctrlMouse{display:grid;grid-template-columns:auto 1fr 3.2em;align-items:center;gap:6px 12px;font-size:.88rem;margin:4px 0 8px}
+.ctrlMouse output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
+.ctrlMouse input[type=range],.ctrlDlg input[type=checkbox]{accent-color:var(--cyan)}
+.ctrlDlg .chk{margin:4px 0}
+.ctrlFixed{line-height:2}
+.ctrlFoot{justify-content:flex-end;margin-top:14px}
 </style>
 </head>
 <body>
@@ -525,7 +552,7 @@ body > .wrap{flex:1;width:100%}
           <button id="wideBtn" aria-pressed="false" title="Hide the side panels so the 3D view gets the whole width">Wide view</button>
           <button id="fullBtn" title="Fill the whole screen (Esc to leave)">Full screen</button>
           <label class="chk" title="Lower sharpness and no shadows: smoother on slower computers"><input type="checkbox" id="fastGfx"> Faster graphics</label>
-          <label class="chk" title="Pieces snap to snap points on what you aim at, like in ARK. Q picks the next snap point, E turns turrets."><input type="checkbox" id="snapOn" checked> ARK snapping</label>
+          <label class="chk" title="Pieces snap to snap points on what you aim at, like in ARK. Q picks the next snap point, E turns turrets." data-ktitle="Pieces snap to snap points on what you aim at, like in ARK. {snapNext} picks the next snap point, {turnPiece} turns turrets."><input type="checkbox" id="snapOn" checked> ARK snapping</label>
         </span>
         <span class="actions" id="camTools">
           <button id="camFit">Fit view</button><button id="camTop">Top down</button>
@@ -537,12 +564,13 @@ body > .wrap{flex:1;width:100%}
       <div class="view3d" id="view3d">
         <canvas id="c3d" aria-label="3D view of the base"></canvas>
         <div class="tools3d" role="toolbar" aria-label="Tools">
-          <button data-mode="build" aria-pressed="true" title="Build (B)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span>Build</span><kbd>B</kbd></button>
-          <button data-mode="select" aria-pressed="false" title="Select (V)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.5 17 2.3-7.2L21 10.5z"/></svg><span>Select</span><kbd>V</kbd></button>
-          <button data-mode="delete" aria-pressed="false" title="Delete (X)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span><kbd>X</kbd></button>
-          <button data-mode="camera" aria-pressed="false" title="Camera (H)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Camera</span><kbd>H</kbd></button>
-          <button id="walkBtn" title="Walk around inside (G)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 3 1M12 8l-1 7"/></svg><span>Walk</span><kbd>G</kbd></button>
+          <button data-mode="build" aria-pressed="true" title="Build (B)" data-ktitle="Build ({build})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span>Build</span><kbd data-k="build">B</kbd></button>
+          <button data-mode="select" aria-pressed="false" title="Select (V)" data-ktitle="Select ({select})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.5 17 2.3-7.2L21 10.5z"/></svg><span>Select</span><kbd data-k="select">V</kbd></button>
+          <button data-mode="delete" aria-pressed="false" title="Delete (X)" data-ktitle="Delete ({delete})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span><kbd data-k="delete">X</kbd></button>
+          <button data-mode="camera" aria-pressed="false" title="Camera (H)" data-ktitle="Camera ({camera})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Camera</span><kbd data-k="camera">H</kbd></button>
+          <button id="walkBtn" title="Walk around inside (G)" data-ktitle="Walk around inside ({walk})"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 3 1M12 8l-1 7"/></svg><span>Walk</span><kbd data-k="walk">G</kbd></button>
           <button id="piecesBtn" aria-pressed="false" title="Show the piece totals; hover one to see those pieces"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
+          <button id="ctrlBtn" title="Change the keys and mouse speed"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M18 10h.5M7.5 14h9"/></svg><span>Controls</span></button>
           <span class="tsep" aria-hidden="true"></span>
           <button id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
           <button id="redoBtn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -551,8 +579,8 @@ body > .wrap{flex:1;width:100%}
           <div class="selTitle" id="selText"></div>
           <div class="selHint" id="selHint"></div>
           <div class="selBtns" id="selTools">
-            <button id="selRot" title="Turn 90° (R)">Turn</button>
-            <button id="selMirX" title="Mirror left–right (M)">Mirror ↔</button>
+            <button id="selRot" title="Turn 90° (R)" data-ktitle="Turn 90° ({turn})">Turn</button>
+            <button id="selMirX" title="Mirror left–right (M)" data-ktitle="Mirror left–right ({mirror})">Mirror ↔</button>
             <button id="selMirY" title="Mirror front–back">Mirror ↕</button>
             <button id="selCopy" title="Copy and paste somewhere else (Ctrl+D)">Copy</button>
           </div>
@@ -569,7 +597,7 @@ body > .wrap{flex:1;width:100%}
           <div class="cross" aria-hidden="true"></div>
           <div class="walkTarget" id="walkTarget" aria-live="polite"></div>
           <div class="walkBar"><b id="walkWhere">Walking</b>
-            <span>WASD walk, Shift run, Space jump, F fly (Space up, C down). Click places at the crosshair; right-click or X removes. Q next snap point, E turn. 1 to 0 pick, I edits the hotbar, B stops building. Esc leaves.</span>
+            <span id="walkHelp">WASD walk, Shift run, Space jump, F fly (Space up, C down). Click places at the crosshair; right-click or X removes. Q next snap point, E turn. 1 to 0 pick, I edits the hotbar, B stops building. Esc leaves.</span>
             <button id="walkBuild" aria-pressed="false">Building: off (B)</button><button id="walkExit">Exit walk</button></div>
         </div>
         <div class="pieces3d" id="pieces3d" hidden><div class="p3head">Pieces <span>hover to find them</span></div><div id="limits3d" class="limits"></div><div id="pieceList"></div></div>
@@ -585,13 +613,34 @@ body > .wrap{flex:1;width:100%}
           <button data-cam="out" aria-label="Zoom out">&minus;</button><button data-cam="down" aria-label="Tilt down">&#9660;</button><button data-cam="in" aria-label="Zoom in">+</button>
         </div>
       </div>
+      <dialog class="ctrlDlg" id="ctrlDlg" aria-labelledby="ctrlTitle">
+        <div class="ctrlHead"><h2 id="ctrlTitle">Controls</h2><span>Saved in this browser</span><button type="button" class="hbmClose" id="ctrlClose" aria-label="Close">×</button></div>
+        <div class="ctrlBody">
+          <p class="note">Click a key, then press the one you want instead (Esc cancels). If that key already does something else, the two swap. Handy on AZERTY keyboards: set walking to Z Q S D.</p>
+          <p class="ctrlMsg" id="ctrlMsg" role="status"></p>
+          <div id="ctrlKeys"></div>
+          <div class="ctrlGroup"><h3>Mouse</h3>
+            <div class="ctrlMouse">
+              <label for="msOrbit">Camera turn speed</label><input type="range" id="msOrbit" min="0.3" max="3" step="0.1"><output id="msOrbitV"></output>
+              <label for="msZoom">Zoom speed</label><input type="range" id="msZoom" min="0.3" max="3" step="0.1"><output id="msZoomV"></output>
+              <label for="msLook">Walk look speed</label><input type="range" id="msLook" min="0.3" max="3" step="0.1"><output id="msLookV"></output>
+            </div>
+            <label class="chk"><input type="checkbox" id="msInvOrbit"> Invert up and down when turning the camera</label>
+            <label class="chk"><input type="checkbox" id="msInvLook"> Invert up and down when looking around while walking</label>
+          </div>
+          <div class="ctrlGroup"><h3>These stay the same</h3>
+            <p class="note ctrlFixed"><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> undo and redo · <kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> copy and paste · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>+<kbd>A</kbd> select all · <kbd>Delete</kbd> deletes the selection · <kbd>Esc</kbd> cancels · <kbd>1</kbd>–<kbd>0</kbd> hotbar · arrow keys also walk · right-drag turns the view, middle-drag pans, scroll zooms</p>
+          </div>
+          <div class="actions ctrlFoot"><button type="button" id="ctrlReset">Back to the usual keys</button><button type="button" class="primary" id="ctrlDone">Done</button></div>
+        </div>
+      </dialog>
       <div class="resizeRow">
       <div class="resizeBar" id="viewResize" role="separator" aria-orientation="horizontal" tabindex="0"
         aria-label="Drag to make the 3D view taller or shorter (arrow keys work too; double-click resets it)" title="Drag to resize the 3D view · double-click to reset"><span></span></div>
       <div class="cornerGrip" id="cornerGrip" tabindex="0" role="separator" aria-label="Drag to change the 3D view's height and width together" title="Drag to resize both ways">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14 6L6 14M14 10L10 14"/></svg></div>
       </div>
-      <p class="note" id="legend3d">New here? The <a href="#guide">Guide</a> explains every tool and shortcut. Quick version: pick a piece, click to build; right-drag turns the view, scroll zooms, Ctrl+Z undoes. Press G to walk around and build in first person.</p>
+      <p class="note" id="legend3d">New here? The <a href="#guide">Guide</a> explains every tool and shortcut. Quick version: pick a piece, click to build; right-drag turns the view, scroll zooms, Ctrl+Z undoes. Press <span data-k="walk">G</span> to walk around and build in first person. Want different keys? Click <b>Controls</b>. Found a bug or have an idea? <a href="#contact">Send feedback</a>.</p>
       <div class="gridbox" id="planView" hidden><svg id="grid" role="img" aria-label="Base grid"></svg></div>
       <p class="note" id="hint"></p>
     </section>
@@ -815,17 +864,18 @@ body > .wrap{flex:1;width:100%}
     <li>Click near the edge of a foundation to add a wall there. Click the top of your walls to start the next floor.</li>
     <li>Turrets go wherever you click: a floor stands them up, the top of a wall puts them on top, and the side of a wall hangs them sideways.</li>
     <li>Pieces need something holding them up, like in game. A green preview can go there; a red one can't, and the bar at the bottom says why.</li>
-    <li><b>Snap points, like in ARK:</b> aim at a piece and dots show where the one you're holding can snap to it (the big white dot is the one it'll use). Press <b>Q</b> for the next snap point (Shift+Q goes back) and <b>E</b> to turn turrets and other free pieces. A flat pillar aimed at a doorframe snaps at right angles to it, and at another pillar it carries on straight or turns. Untick <b>ARK snapping</b> above the 3D view to aim freely instead.</li>
+    <li><b>Snap points, like in ARK:</b> aim at a piece and dots show where the one you're holding can snap to it (the big white dot is the one it'll use). Press <b data-k="snapNext">Q</b> for the next snap point (Shift+<span data-k="snapNext">Q</span> goes back) and <b data-k="turnPiece">E</b> to turn turrets and other free pieces. A flat pillar aimed at a doorframe snaps at right angles to it, and at another pillar it carries on straight or turns. Untick <b>ARK snapping</b> above the 3D view to aim freely instead.</li>
   </ul>
 
   <h2>Tools</h2>
   <dl class="toolList">
-    <dt><span class="modeTag" style="--m:var(--m-build)">Build · B</span></dt><dd>Places the piece you picked. Clicking something that's already there never removes it.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-select)">Select · V</span></dt><dd>Click a piece to select it, Shift-click to add more, or drag across empty space to box-select. Double-click selects a whole floor.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-delete)">Delete · X</span></dt><dd>Removes what you click, or hold and drag across a row of pieces.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-camera)">Camera · H</span></dt><dd>Drag to turn the view. In any tool, right-drag also turns it, scroll zooms and middle-drag pans.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-walk)">Walk · G</span></dt><dd>Walk through your base in first person and build as you go: click places the hotbar piece at the crosshair, right-click or X removes what it's pointing at. F flies up through the floors, B switches building off if you only want to look around, Esc leaves.</dd>
-    <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows along the bottom while you walk. Press a number key to pick that piece. Press I (or click Edit) and then a slot to choose what goes on it. Your hotbar is saved in this browser.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-build)">Build · <span data-k="build">B</span></span></dt><dd>Places the piece you picked. Clicking something that's already there never removes it.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-select)">Select · <span data-k="select">V</span></span></dt><dd>Click a piece to select it, Shift-click to add more. Click and hold, then drag a box: everything inside it gets selected, on every floor that's showing, even pieces hidden behind others. Drag round the whole build to select all of it, and hold Shift to add to what you have. Drag a selected turret to move it. Double-click selects a whole floor.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-delete)">Delete · <span data-k="delete">X</span></span></dt><dd>Removes what you click, or hold and drag across a row of pieces.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-camera)">Camera · <span data-k="camera">H</span></span></dt><dd>Drag to turn the view. In any tool, right-drag also turns it, scroll zooms and middle-drag pans.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-walk)">Walk · <span data-k="walk">G</span></span></dt><dd>Walk through your base in first person and build as you go: click places the hotbar piece at the crosshair, right-click or <span data-k="walkRemove">X</span> removes what it's pointing at. <span data-k="fly">F</span> flies up through the floors, <span data-k="walkBuild">B</span> switches building off if you only want to look around, Esc leaves.</dd>
+    <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows along the bottom while you walk. Press a number key to pick that piece. Press <span data-k="hotbarEdit">I</span> (or click Edit) and then a slot to choose what goes on it. Your hotbar is saved in this browser.</dd>
+    <dt><span class="modeTag" style="--m:var(--cyan)">Controls</span></dt><dd>The keyboard button above the 3D view lets you change any key, the camera and zoom speed, and invert the mouse. Your keys are saved in this browser.</dd>
     <dt><span class="modeTag" style="--m:var(--m-camera)">View size</span></dt><dd>Drag the bar under the 3D view to make it taller or shorter (double-click it to reset). Wide view hides the side panels, Full screen fills your screen, and Faster graphics helps on slower computers.</dd>
     <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover one to light those pieces up in orange.</dd>
   </dl>
@@ -871,21 +921,22 @@ body > .wrap{flex:1;width:100%}
   <h2>Keyboard shortcuts</h2>
   <table class="keys">
     <tbody>
-      <tr><td><kbd>B</kbd> <kbd>V</kbd> <kbd>X</kbd> <kbd>H</kbd> <kbd>G</kbd></td><td>Build, Select, Delete, Camera, Walk</td></tr>
-      <tr><td><kbd>R</kbd> / <kbd>M</kbd></td><td>Turn or mirror the selection (or the copy you're about to paste)</td></tr>
+      <tr><td><kbd data-k="build">B</kbd> <kbd data-k="select">V</kbd> <kbd data-k="delete">X</kbd> <kbd data-k="camera">H</kbd> <kbd data-k="walk">G</kbd></td><td>Build, Select, Delete, Camera, Walk</td></tr>
+      <tr><td><kbd data-k="turn">R</kbd> / <kbd data-k="mirror">M</kbd></td><td>Turn or mirror the selection (or the copy you're about to paste)</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy and paste</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Copy the selection and paste it straight away</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select everything you can see</td></tr>
       <tr><td><kbd>Delete</kbd></td><td>Delete the selection</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Undo and redo</td></tr>
-      <tr><td><kbd>Q</kbd> / <kbd>E</kbd> (building)</td><td>Next snap point / turn the piece</td></tr>
+      <tr><td><kbd data-k="snapNext">Q</kbd> / <kbd data-k="turnPiece">E</kbd> (building)</td><td>Next snap point / turn the piece</td></tr>
       <tr><td><kbd>1</kbd> to <kbd>0</kbd> (walking)</td><td>Pick a piece from the hotbar</td></tr>
-      <tr><td><kbd>X</kbd> / <kbd>I</kbd> (walking)</td><td>Remove what the crosshair points at / edit the hotbar</td></tr>
+      <tr><td><kbd data-k="walkRemove">X</kbd> / <kbd data-k="hotbarEdit">I</kbd> (walking)</td><td>Remove what the crosshair points at / edit the hotbar</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Clear the selection, stop pasting, or leave walk mode</td></tr>
-      <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, <kbd>Shift</kbd>, <kbd>Space</kbd>, <kbd>F</kbd></td><td>Walk mode: move, run, jump, fly</td></tr>
-      <tr><td><kbd>B</kbd> (walking)</td><td>Switch building off (and back on) while you walk</td></tr>
+      <tr><td><kbd data-k="fwd">W</kbd> <kbd data-k="left">A</kbd> <kbd data-k="back">S</kbd> <kbd data-k="right">D</kbd>, <kbd data-k="run">Shift</kbd>, <kbd data-k="jump">Space</kbd>, <kbd data-k="fly">F</kbd></td><td>Walk mode: move, run, jump, fly</td></tr>
+      <tr><td><kbd data-k="walkBuild">B</kbd> (walking)</td><td>Switch building off (and back on) while you walk</td></tr>
     </tbody>
   </table>
+  <p>Rather use other keys? <button type="button" class="primary" id="guideCtrl">Change the controls</button></p>
   <p><a class="btnLink" href="#planner">Back to the planner</a></p>
 </section>
 
@@ -953,6 +1004,7 @@ body > .wrap{flex:1;width:100%}
   <!-- Netlify picks this form up when the site is deployed (Forms > Enable form detection, once) -->
   <form class="contactForm" id="contactForm" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
     <input type="hidden" name="form-name" value="contact">
+    <input type="hidden" name="subject" value="ASA Base Planner: new message">
     <p class="hp" aria-hidden="true"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
     <div class="cfRow">
       <label>Name <span class="opt">(optional)</span><input type="text" name="name" autocomplete="name" maxlength="80"></label>
@@ -1541,15 +1593,15 @@ $('dup').onclick = () => { const f = selected(); if(!f) return;
   const c = {...f, id:nextId++, x:f.x + ((typeof S.snap === 'number' && S.snap) ? S.snap : 75)}; S.free.push(c); S.sel = c.id; render(); };
 $('del').onclick = () => { S.free = S.free.filter(f => f.id!==S.sel); S.sel = null; render(); };
 window.addEventListener('keydown', e => {
-  if(!placing()) return;
+  if(!placing() || CTRL.open) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if(['INPUT','SELECT','TEXTAREA'].includes(tag)) return;
   const f = selected(); if(!f) return;
   const st = (typeof S.snap === 'number' && S.snap) ? S.snap : 10, k = e.key;
   if(k==='ArrowLeft') f.x -= st; else if(k==='ArrowRight') f.x += st;
   else if(k==='ArrowUp') f.y -= st; else if(k==='ArrowDown') f.y += st;
-  else if(k==='q' || k==='Q') f.yaw = normYaw(f.yaw - 15);
-  else if(k==='e' || k==='E') f.yaw = normYaw(f.yaw + 15);
+  else if(k.toLowerCase() === KEYS.snapNext) f.yaw = normYaw(f.yaw - 15);
+  else if(k.toLowerCase() === KEYS.turnPiece) f.yaw = normYaw(f.yaw + 15);
   else if(k==='Delete' || k==='Backspace'){ S.free = S.free.filter(x => x.id!==f.id); S.sel = null; }
   else return;
   e.preventDefault(); render();
@@ -2695,22 +2747,32 @@ function grassTex(){
 }
 // Building pieces get their texture from where they are in the world (one plate per 300 units, lined up with the
 // grid), so walls, pillars and foundations all show plates the right size whatever their shape, plus a little relief.
+// With opt.edge (box parts only), every edge is drawn rounded off: the light catches it like a real bevelled plate.
 function triplanar(mat, side, top, bump, opt = {}){
-  const size = opt.size || 300, ox = opt.ox ?? 150, oz = opt.oz ?? 90, ao = opt.ao ? 1 : 0;
+  const size = opt.size || 300, ox = opt.ox ?? 150, oz = opt.oz ?? 90, ao = opt.ao ? 1 : 0, edge = opt.edge || 0;
   mat.extensions = {derivatives:true};
   mat.onBeforeCompile = sh => {
     sh.uniforms.tpSide = {value:side}; sh.uniforms.tpTop = {value:top}; sh.uniforms.tpBump = {value:bump};
     sh.uniforms.tpSize = {value:size}; sh.uniforms.tpOff = {value:new THREE.Vector2(ox, oz)}; sh.uniforms.tpAo = {value:ao};
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vTpPos; varying vec3 vTpN;')
+    sh.uniforms.tpEdgeW = {value:edge};
+    const ev = edge ? 'varying vec3 vEdgeL; varying vec3 vEdgeS; varying vec3 vEdgeX; varying vec3 vEdgeY; varying vec3 vEdgeZ;' : '';
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vTpPos; varying vec3 vTpN;' + ev)
       .replace('#include <project_vertex>', `#include <project_vertex>
         vec4 tpW = vec4(transformed, 1.0); vec3 tpN = objectNormal;
         #ifdef USE_INSTANCING
           tpW = instanceMatrix*tpW; tpN = mat3(instanceMatrix)*tpN;
         #endif
-        tpW = modelMatrix*tpW; vTpPos = tpW.xyz; vTpN = normalize(mat3(modelMatrix)*tpN);`);
+        tpW = modelMatrix*tpW; vTpPos = tpW.xyz; vTpN = normalize(mat3(modelMatrix)*tpN);` + (edge ? `
+        // where this point sits in its unit box, how big the box is, and which way its three sides face (view space)
+        vEdgeL = transformed; vEdgeS = vec3(1e4); vEdgeX = vec3(1.0, 0.0, 0.0); vEdgeY = vec3(0.0, 1.0, 0.0); vEdgeZ = vec3(0.0, 0.0, 1.0);
+        #ifdef USE_INSTANCING
+          mat3 eM = mat3(instanceMatrix);
+          vEdgeS = vec3(length(eM[0]), length(eM[1]), length(eM[2]));
+          vEdgeX = normalize(normalMatrix*eM[0]); vEdgeY = normalize(normalMatrix*eM[1]); vEdgeZ = normalize(normalMatrix*eM[2]);
+        #endif` : ''));
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
         varying vec3 vTpPos; varying vec3 vTpN; uniform sampler2D tpSide; uniform sampler2D tpTop; uniform float tpBump;
-        uniform float tpSize; uniform vec2 tpOff; uniform float tpAo;
+        uniform float tpSize; uniform vec2 tpOff; uniform float tpAo; uniform float tpEdgeW; ${ev}
         vec3 tpPerturb(vec3 pos, vec3 nrm, vec2 d){
           vec3 sx = dFdx(pos), sy = dFdy(pos), r1 = cross(sy, nrm), r2 = cross(nrm, sx); float det = dot(sx, r1);
           return normalize(abs(det)*nrm - sign(det)*(d.x*r1 + d.y*r2));
@@ -2725,11 +2787,21 @@ function triplanar(mat, side, top, bump, opt = {}){
         if(tpAo > 0.5){                                                        // soft shade where each wall row meets the one below
           float rowZ = mod(vTpPos.z - 90.0, 300.0);
           diffuseColor.rgb *= mix(1.0, mix(0.7, 1.0, smoothstep(0.0, 70.0, rowZ)), tpWt.x + tpWt.y);
-        }`)
+        }` + (edge ? `
+        // the face this point is on is the side it's nearest; the next two nearest sides are the edges round that face
+        vec3 eD = (0.5 - abs(vEdgeL))*vEdgeS, eSg = sign(vEdgeL);
+        float eA, eB, eSA, eSB; vec3 eDirA, eDirB;
+        if(eD.x <= eD.y && eD.x <= eD.z){ eA = eD.y; eB = eD.z; eSA = vEdgeS.y; eSB = vEdgeS.z; eDirA = vEdgeY*eSg.y; eDirB = vEdgeZ*eSg.z; }
+        else if(eD.y <= eD.z){ eA = eD.x; eB = eD.z; eSA = vEdgeS.x; eSB = vEdgeS.z; eDirA = vEdgeX*eSg.x; eDirB = vEdgeZ*eSg.z; }
+        else { eA = eD.x; eB = eD.y; eSA = vEdgeS.x; eSB = vEdgeS.y; eDirA = vEdgeX*eSg.x; eDirB = vEdgeY*eSg.y; }
+        float eW = min(tpEdgeW, 0.22*min(eSA, eSB));
+        float eWA = 1.0 - smoothstep(0.0, eW, eA), eWB = 1.0 - smoothstep(0.0, eW, eB);
+        diffuseColor.rgb *= 1.0 + 0.22*max(eWA, eWB);                         // worn, brighter metal along the edges` : ''))
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = clamp(roughnessFactor*mix(1.25, 0.8, tpH), 0.05, 1.0);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-        normal = tpPerturb(-vViewPosition, normal, vec2(dFdx(tpH), dFdy(tpH))*tpBump);`);
+        normal = tpPerturb(-vViewPosition, normal, vec2(dFdx(tpH), dFdy(tpH))*tpBump);` + (edge ? `
+        normal = normalize(normal + (eDirA*eWA + eDirB*eWB)*0.9);              // the rounded-off edge faces partly sideways` : ''));
   };
   mat.customProgramCacheKey = () => 'triplanar-' + mat.uuid;
   mat.needsUpdate = true;
@@ -2742,7 +2814,27 @@ function rightTri(pts){
   g.applyMatrix4(new THREE.Matrix4().set(0,0,1,0, 1,0,0,0, 0,1,0,0, 0,0,0,1));   // shape's x -> along the wall (y), up -> z, thickness -> x
   g.computeVertexNormals(); return g;
 }
-let SUN = null, MAT_S = null, MAT_I = null, MAT_G = null, MAT_T = null, MAT_P = null, SKMAP = new Map(), GROUND = null;
+let SUN = null, MAT_S = null, MAT_I = null, MAT_G = null, MAT_T = null, MAT_P = null, SKMAP = new Map(), GROUND = null, MAT_E = {};
+// What shiny metal reflects: sky above, a bright haze round the horizon and the grass below, blurred into soft light.
+function skyEnv(){
+  const dark = isDark(), es = new THREE.Scene(), g = new THREE.SphereGeometry(50, 48, 24), pos = g.attributes.position, col = [];
+  const lin = h => new THREE.Color(h).convertSRGBToLinear();
+  const top = lin(dark ? '#1c2b3b' : '#5d8fc4'), hor = lin(dark ? '#46525c' : '#eef2f3'), gnd = lin(dark ? '#1f241a' : '#5d6b43');
+  const c = new THREE.Color();
+  for(let i = 0; i < pos.count; i++){
+    const up = pos.getZ(i)/50;                                            // the world is z-up
+    if(up >= 0) c.copy(hor).lerp(top, Math.pow(up, 0.55)); else c.copy(hor).lerp(gnd, Math.min(1, -up*5));
+    col.push(c.r, c.g, c.b);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.BackSide})));
+  const sun = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 8), new THREE.MeshBasicMaterial({color:new THREE.Color(dark ? 1.5 : 6, dark ? 1.5 : 5.6, dark ? 1.6 : 4.8)}));
+  sun.position.set(-0.55, -0.8, 1.35).normalize().multiplyScalar(40); es.add(sun);   // a warm glint where the sun is
+  const pm = new THREE.PMREMGenerator(R3), rt = pm.fromScene(es, 0.03, 0.1, 100);
+  pm.dispose(); g.dispose();
+  if(SCENE.environment) SCENE.environment.dispose();
+  SCENE.environment = rt.texture;
+}
 function init3D(){
   if(!V3.ok || V3.ready) return;
   const canvas = $('c3d');
@@ -2751,7 +2843,7 @@ function init3D(){
   R3.setPixelRatio(pixelRatio());
   R3.outputEncoding = THREE.sRGBEncoding;
   R3.toneMapping = THREE.ACESFilmicToneMapping; R3.toneMappingExposure = 1.05;
-  R3.shadowMap.enabled = true; R3.shadowMap.type = THREE.PCFShadowMap;
+  R3.shadowMap.enabled = true; R3.shadowMap.type = THREE.PCFSoftShadowMap;
   R3.shadowMap.autoUpdate = false;                                        // redrawn only when the build changes
   if(FAST_GFX) R3.shadowMap.enabled = false;
   SCENE = new THREE.Scene();
@@ -2759,19 +2851,26 @@ function init3D(){
   CAM.up.set(0, 0, 1);
   const sky = cloudSky(); SCENE.background = sky;
   SCENE.fog = new THREE.Fog(new THREE.Color(sky.userData.horizon), 20000, 80000);
-  SCENE.add(new THREE.HemisphereLight(0xe6efff, 0x5a5d45, 0.7));
-  SUN = new THREE.DirectionalLight(0xfff1dc, 1.25);
+  SCENE.add(new THREE.HemisphereLight(0xe6efff, 0x5a5d45, 0.35));
+  SUN = new THREE.DirectionalLight(0xfff1dc, 1.35);
   SUN.castShadow = true; SUN.shadow.mapSize.set(2048, 2048); SUN.shadow.bias = -0.0005; SUN.shadow.normalBias = 2;
+  SUN.shadow.radius = 3;
   SCENE.add(SUN, SUN.target);
   const fill = new THREE.DirectionalLight(0xc8dcff, 0.35); fill.position.set(0.8, -0.7, 0.4); SCENE.add(fill);
   RAYC = new THREE.Raycaster();
-  MAT_S = triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.6, metalness:0.3}), wallPlateTex(), floorPlateTex(), 1.6, {ao:true});
-  MAT_P = triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.55, metalness:0.35}), columnTex(), floorPlateTex(), 1.4, {size:150, ox:75, ao:true});
-  const straw = strawTex();
-  MAT_T = triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.92, metalness:0}), straw, straw, 2.4);
-  const gun = gunTex();
-  MAT_I = triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.4, metalness:0.5}), gun, gun, 0.7, {size:90, ox:0, oz:0});
-  MAT_G = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.3, metalness:0.1, emissive:0x2a2a2a});
+  skyEnv();
+  // each material twice: plain for round parts, and with bevelled edges for the boxes most pieces are made of
+  const wallT = wallPlateTex(), floorT = floorPlateTex(), colT = columnTex(), straw = strawTex(), gun = gunTex();
+  const mats = edge => ({
+    s:triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.55, metalness:0.42, envMapIntensity:0.75}), wallT, floorT, 1.6, {ao:true, edge:edge && 6}),
+    p:triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5, metalness:0.5, envMapIntensity:0.9}), colT, floorT, 1.4, {size:150, ox:75, ao:true, edge:edge && 4}),
+    t:triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.92, metalness:0, envMapIntensity:0.6}), straw, straw, 2.4, {edge:edge && 5}),
+    i:triplanar(new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.35, metalness:0.65, envMapIntensity:1.1}), gun, gun, 0.7, {size:90, ox:0, oz:0, edge:edge && 3})});
+  ({s:MAT_S, p:MAT_P, t:MAT_T, i:MAT_I} = mats(false));
+  MAT_E = mats(true);
+  // glowing parts (Tek rings, lenses, generator cores) give off their own colour, so they light up even in shadow
+  MAT_G = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.25, metalness:0.1});
+  MAT_G.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb*0.85;'); };
   MAT_ROOF = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.6, transparent:true, opacity:0.28, depthWrite:false});
   const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 24); cyl.rotateX(Math.PI/2);
   const cone = new THREE.ConeGeometry(0.5, 1, 24); cone.rotateX(Math.PI/2);
@@ -2789,7 +2888,7 @@ function init3D(){
   GHOST = new THREE.Mesh(GEO.box, new THREE.MeshBasicMaterial({color:0xffcc33, transparent:true, opacity:0.45, depthWrite:false}));
   GHOST.matrixAutoUpdate = false; GHOST.visible = false; SCENE.add(GHOST);
   if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
-    const t = cloudSky(); SCENE.background = t; SCENE.fog.color.set(t.userData.horizon); CV = {}; rebuild3D(); });
+    const t = cloudSky(); SCENE.background = t; SCENE.fog.color.set(t.userData.horizon); skyEnv(); CV = {}; rebuild3D(); });
   new ResizeObserver(size3D).observe($('view3d'));
   bind3D(canvas);
   V3.ready = true;
@@ -2839,7 +2938,8 @@ function rebuild3D(){
   }
   for(const [key, arr] of Object.entries(buckets)){
     const [g, mk] = key.split('|');
-    const im = new THREE.InstancedMesh(GEO[g], {s:MAT_S, t:MAT_T, p:MAT_P, i:MAT_I, g:MAT_G, r:MAT_ROOF}[mk], arr.length);
+    const mat = g === 'box' && MAT_E[mk] ? MAT_E[mk] : {s:MAT_S, t:MAT_T, p:MAT_P, i:MAT_I, g:MAT_G, r:MAT_ROOF}[mk];   // boxes get bevelled edges
+    const im = new THREE.InstancedMesh(GEO[g], mat, arr.length);
     arr.forEach((it, i) => {
       im.setMatrixAt(i, it.m); im.setColorAt(i, col.set(it.c).convertSRGBToLinear());
       if(it.e.sk){ const list = SKMAP.get(it.e.sk) || []; list.push([im, i]); SKMAP.set(it.e.sk, list); }
@@ -2853,6 +2953,9 @@ function rebuild3D(){
   if(x0 === Infinity){ x0 = 0; x1 = S.N*300; y0 = 0; y1 = S.N*300; }
   const cx = (x0 + x1)/2, cy = -(y0 + y1)/2, R = Math.max(1500, Math.hypot(x1 - x0, y1 - y0, z1)/2 + 600);
   V3.radius = R;
+  // big builds spread the shadow over a wide area, so they get a sharper shadow map (unless Faster graphics is on)
+  const ms = !FAST_GFX && R > 3500 ? 4096 : 2048;
+  if(SUN.shadow.mapSize.x !== ms){ SUN.shadow.mapSize.set(ms, ms); if(SUN.shadow.map){ SUN.shadow.map.dispose(); SUN.shadow.map = null; } }
   const dir = new THREE.Vector3(-0.55, 0.8, 1.35).normalize();
   SUN.target.position.set(cx, cy, z1/2); SUN.position.copy(SUN.target.position).addScaledVector(dir, R*2.2);
   Object.assign(SUN.shadow.camera, {left:-R, right:R, top:R, bottom:-R, near:10, far:R*4.5}); SUN.shadow.camera.updateProjectionMatrix();
@@ -3169,7 +3272,7 @@ const MODE_HELP = {
   build:  () => placing()
     ? `Build · ${S.piece.label}: click a floor, the top of a wall, or the side of a wall. Drag a placed piece to move it.`
     : `Build · ${S.piece.label}: click the ground or anything you've built. Drag to paint a row; build on top of walls to go up a floor.`,
-  select: () => 'Select: click a piece (Shift adds more). Drag a turret to move it, or drag across empty space to box-select.',
+  select: () => 'Select: click a piece (Shift adds more), or click and drag a box round as much as you want, even the whole build. Drag a selected turret to move it. Ctrl+A selects everything.',
   delete: () => 'Delete: click a piece, or drag across several. Ctrl+Z brings them back.',
   camera: () => 'Camera: drag to turn, Shift-drag to pan, scroll or pinch to zoom.',
 };
@@ -3331,11 +3434,11 @@ function down3D(e, again){
   S.cur = t.floor;
   if(t.mode === 'cell'){
     paint = {kind:'cell', val:true};
-    if(S.cells[S.cur].has(t.key)){ flashHint('Already built there. Use Delete (X) to remove it.'); return; }
+    if(S.cells[S.cur].has(t.key)){ flashHint(`Already built there. Use Delete (${keyName(KEYS.delete)}) to remove it.`); return; }
     applyCell(t.key);
   } else {
     paint = {kind:'edge', mode:S.piece.id};
-    if(!applyEdge(t.key)){ flashHint('Already built there. Use Delete (X) to remove it.'); return; }
+    if(!applyEdge(t.key)){ flashHint(`Already built there. Use Delete (${keyName(KEYS.delete)}) to remove it.`); return; }
   }
   render();
 }
@@ -3346,7 +3449,7 @@ function move3D(e){
     const g = t.f;
     if(['lvl','x','y','base','zOff','yaw','pitch','roll'].every(k => g[k] === f[k])) return;
     Object.assign(f, {lvl:g.lvl, x:g.x, y:g.y, base:g.base, zOff:g.zOff, yaw:g.yaw, pitch:g.pitch, roll:g.roll});
-    S.cur = lvlIndex(f);
+    S.cur = lvlIndex(f); drag.moved = true;
     setStatus(`Moving ${nameOf({kind:f.kind, path:f.path || PATHS()[f.kind] || ''})} · ${floorName(S.cur)}`);
     if(!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
     return;
@@ -3460,6 +3563,20 @@ function toScreen(x, y, z){
   const v = new THREE.Vector3(x, -y, z).project(CAM), r = $('c3d').getBoundingClientRect();
   return {x:r.left + (v.x + 1)/2*r.width, y:r.top + (1 - v.y)/2*r.height, front:v.z < 1};
 }
+// every piece whose middle is inside a box drawn on screen (pieces hidden behind others count too)
+function boxPick(b){
+  const r = $('c3d').getBoundingClientRect(), v = new THREE.Vector3(), out = [];
+  const xa = Math.min(b.x0, b.x1), xb = Math.max(b.x0, b.x1), ya = Math.min(b.y0, b.y1), yb = Math.max(b.y0, b.y1);
+  applyCam(); CAM.updateMatrixWorld();
+  for(const en of entries3D()){
+    if(!en.sk || !visible3D(en)) continue;
+    v.set(en.x, -en.y, en.z).project(CAM);
+    if(v.z >= 1) continue;
+    const sx = r.left + (v.x + 1)/2*r.width, sy = r.top + (1 - v.y)/2*r.height;
+    if(sx >= xa && sx <= xb && sy >= ya && sy <= yb) out.push(en.sk);
+  }
+  return out;
+}
 
 /* ---- pointer handling ---- */
 let hoverEv = null, hoverRaf = 0;
@@ -3488,6 +3605,20 @@ function bind3D(cv){
     Object.assign(el.style, {left:Math.min(box.x0, box.x1) - r.left + 'px', top:Math.min(box.y0, box.y1) - r.top + 'px',
       width:Math.abs(box.x1 - box.x0) + 'px', height:Math.abs(box.y1 - box.y0) + 'px'});
   };
+  // while the box is being drawn, the pieces it would select light up blue
+  let boxRaf = 0;
+  const queueBoxLight = () => {
+    if(boxRaf) return;
+    boxRaf = requestAnimationFrame(() => {
+      boxRaf = 0; if(!box || !box.live) return;
+      const now = new Set(boxPick(box));
+      for(const sk of box.lit) if(!now.has(sk)) untint(sk);
+      for(const sk of now) if(!box.lit.has(sk)) tint(sk, HOVER_SEL);
+      box.lit = now;
+      setStatus(`Box select: ${now.size} piece${now.size === 1 ? '' : 's'} inside${box.add ? ', added to what you had' : ''}. Let go to select ${now.size === 1 ? 'it' : 'them'}.`);
+      frame3D();
+    });
+  };
   cv.addEventListener('contextmenu', e => e.preventDefault());
   cv.addEventListener('pointerdown', e => {
     if(WALK.on){
@@ -3500,7 +3631,10 @@ function bind3D(cv){
     ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
     if(PASTE.on && e.button === 0){ e.preventDefault(); pasteAt(e); return; }
     GHOST.visible = false; setHover(null);
-    if(e.pointerType === 'touch' && ptrs.size === 2){ paint = null; drag = null; orbit = null; erase = null; box = null; $('marquee').hidden = true; pinch = pinchInfo(); return; }
+    if(e.pointerType === 'touch' && ptrs.size === 2){
+      if(box){ for(const sk of box.lit) untint(sk); frame3D(); }
+      paint = null; drag = null; orbit = null; erase = null; box = null; $('marquee').hidden = true; pinch = pinchInfo(); return;
+    }
     const camMode = UI.mode === 'camera' && e.button === 0;
     if(e.button === 2 || e.button === 1 || camMode || (e.button === 0 && e.altKey)){
       orbit = {x:e.clientX, y:e.clientY, pan:e.button === 1 || e.shiftKey, right:e.button === 2, moved:false};
@@ -3511,21 +3645,15 @@ function bind3D(cv){
     e.preventDefault();
     if(UI.mode === 'build') return down3D(e);
     if(UI.mode === 'delete'){ erase = {done:new Set(), warned:false}; return eraseAt(e); }
-    // select
+    // select: a click picks what's under it; press and drag from anywhere, even over the build, to box-select
     const h = hit3D(e, false, true);
-    if(h && h.o.sk){
-      if(e.shiftKey){ const s = new Set(UI.sel); s.has(h.o.sk) ? s.delete(h.o.sk) : s.add(h.o.sk); setSelection([...s]); render(); return; }
-      setSelection([h.o.sk]);
-      if(h.o.fid) drag = {id:h.o.fid};
-      render(); return;
-    }
-    if(h && !h.o.sk){ explainAuto(h.o); return; }
-    box = {x0:e.clientX, y0:e.clientY, x1:e.clientX, y1:e.clientY, add:e.shiftKey};
+    if(h && h.o.fid && UI.sel.has(h.o.sk) && !e.shiftKey){ drag = {id:h.o.fid, fromSel:true}; return; }   // a selected turret drags to move
+    box = {x0:e.clientX, y0:e.clientY, x1:e.clientX, y1:e.clientY, add:e.shiftKey, hit:h, live:false, lit:new Set()};
   });
   cv.addEventListener('pointermove', e => {
     if(WALK.on){
-      if(document.pointerLockElement === cv) walkLook(e.movementX, e.movementY);
-      else if(WALK.drag){ walkLook(e.clientX - WALK.drag.x, e.clientY - WALK.drag.y); WALK.drag = {x:e.clientX, y:e.clientY}; }
+      if(document.pointerLockElement === cv) mouseLook(e.movementX, e.movementY);
+      else if(WALK.drag){ mouseLook(e.clientX - WALK.drag.x, e.clientY - WALK.drag.y); WALK.drag = {x:e.clientX, y:e.clientY}; }
       return;
     }
     const p = ptrs.get(e.pointerId); if(p){ p.x = e.clientX; p.y = e.clientY; }
@@ -3538,10 +3666,15 @@ function bind3D(cv){
       const dx = e.clientX - orbit.x, dy = e.clientY - orbit.y;
       if(Math.abs(dx) + Math.abs(dy) > 2) orbit.moved = true;
       orbit.x = e.clientX; orbit.y = e.clientY;
-      if(orbit.pan || e.shiftKey && UI.mode === 'camera') panCam(dx, dy); else rotateCam(dx, dy);
+      if(orbit.pan || e.shiftKey && UI.mode === 'camera') panCam(dx, dy); else rotateCam(dx*MOUSE.orbit, dy*MOUSE.orbit*(MOUSE.invOrbit ? -1 : 1));
       return;
     }
-    if(box){ box.x1 = e.clientX; box.y1 = e.clientY; drawBox(); return; }
+    if(box){
+      box.x1 = e.clientX; box.y1 = e.clientY;
+      if(!box.live && Math.abs(box.x1 - box.x0) + Math.abs(box.y1 - box.y0) > 6){ box.live = true; setHover(null); }
+      if(box.live){ drawBox(); queueBoxLight(); }
+      return;
+    }
     if(erase){ eraseAt(e); return; }
     if(drag || paint){ move3D(e); return; }
     if(e.pointerType === 'touch' && !PASTE.on) return;
@@ -3559,27 +3692,32 @@ function bind3D(cv){
       if(h){ if(h.o.sk) deleteMany([h.o.sk]); else explainAuto(h.o); }
     }
     if(box){
-      $('marquee').hidden = true;
-      if(Math.abs(box.x1 - box.x0) > 5 || Math.abs(box.y1 - box.y0) > 5){
-        const xa = Math.min(box.x0, box.x1), xb = Math.max(box.x0, box.x1), ya = Math.min(box.y0, box.y1), yb = Math.max(box.y0, box.y1);
+      $('marquee').hidden = true; cancelAnimationFrame(boxRaf); boxRaf = 0;
+      const h = box.hit;
+      if(box.live && e.type === 'pointerup'){                            // everything inside the box, on every floor that's showing
         const pick = new Set(box.add ? UI.sel : []);
-        applyCam(); CAM.updateMatrixWorld();
-        for(const en of entries3D()){
-          if(!en.sk || !visible3D(en)) continue;
-          const s = toScreen(en.x, en.y, en.z);
-          if(s.front && s.x >= xa && s.x <= xb && s.y >= ya && s.y <= yb) pick.add(en.sk);
-        }
+        for(const sk of boxPick(box)) pick.add(sk);
         setSelection([...pick]);
-      } else if(!box.add) setSelection([]);
+        const n = pick.size;
+        if(n) flashHint(`${n} piece${n === 1 ? '' : 's'} selected.${n > 1 ? ' Drag again with Shift held to add more.' : ''}`);
+      } else if(box.live){ /* cancelled: keep the selection as it was */ }
+      else if(h && h.o.sk){                                              // a click: pick that piece (Shift adds or removes it)
+        if(box.add){ const s = new Set(UI.sel); s.has(h.o.sk) ? s.delete(h.o.sk) : s.add(h.o.sk); setSelection([...s]); }
+        else setSelection([h.o.sk]);
+      }
+      else if(h) explainAuto(h.o);
+      else if(!box.add) setSelection([]);
+      for(const sk of box.lit) untint(sk);
       render();
     }
+    if(drag && drag.fromSel && !drag.moved && UI.sel.size > 1){ setSelection(['f:' + drag.id]); render(); }   // clicked one of several: just that one
     if(ptrs.size < 2) pinch = null;
     if(UI.mode === 'camera') cv.style.cursor = CURSOR.camera;
     orbit = null; paint = null; drag = null; erase = null; box = null;
   };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('pointerleave', () => { if(GHOST.visible){ GHOST.visible = false; frame3D(); } setHover(null); baseStatus(); });
-  cv.addEventListener('wheel', e => { e.preventDefault(); if(!WALK.on) zoomCam(Math.exp(e.deltaY*0.0012)); }, {passive:false});
+  cv.addEventListener('wheel', e => { e.preventDefault(); if(!WALK.on) zoomCam(Math.exp(e.deltaY*0.0012*MOUSE.zoom)); }, {passive:false});
   cv.addEventListener('dblclick', e => {                              // double-click in Select: the whole floor
     if(UI.mode !== 'select' || WALK.on) return;
     const h = hit3D(e, false, true); if(h) selectFloor(h.o.lv || 0);
@@ -3653,7 +3791,7 @@ $('selNone').onclick = () => { setSelection([]); render(); };
 ['pieces', 'cats'].forEach(id => $(id).addEventListener('click', ev => { if(ev.target.closest('button')) setMode('build'); }));
 window.addEventListener('keydown', e => {
   const tag = document.activeElement && document.activeElement.tagName;
-  if(['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || PAGE !== 'planner') return;
+  if(['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || PAGE !== 'planner' || CTRL.open) return;
   const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
   if(mod && k === 'z'){ e.preventDefault(); return e.shiftKey ? redo() : undo(); }
   if(mod && k === 'y'){ e.preventDefault(); return redo(); }
@@ -3663,15 +3801,15 @@ window.addEventListener('keydown', e => {
   if(mod && k === 'a' && V3.on){ e.preventDefault(); setMode('select'); return selectAllVisible(); }
   if(mod || e.altKey) return;
   if(k === 'escape' && !$('hbMenu').hidden){ return closeHbMenu(); }
-  if(k === 'q' && UI.mode === 'build' && !S.sel && V3.on && SNAP.list.length > 1){ snapCycle(e.shiftKey ? -1 : 1); return; }
-  if(k === 'e' && UI.mode === 'build' && V3.on && placing()){ snapTurn(); return; }
-  if(PASTE.on && (k === 'r' || k === 'm')){ return turnPaste(k === 'r' ? 'rot' : 'mx'); }
+  if(k === KEYS.snapNext && UI.mode === 'build' && !S.sel && V3.on && SNAP.list.length > 1){ snapCycle(e.shiftKey ? -1 : 1); return; }
+  if(k === KEYS.turnPiece && UI.mode === 'build' && V3.on && placing()){ snapTurn(); return; }
+  if(PASTE.on && (k === KEYS.turn || k === KEYS.mirror)){ return turnPaste(k === KEYS.turn ? 'rot' : 'mx'); }
   if(PASTE.on && k === 'escape'){ endPaste(); return baseStatus(); }
-  if(k === 'r' && UI.sel.size) return transformSelection('rot');
-  if(k === 'm' && UI.sel.size) return transformSelection('mx');
-  if(k === 'g' && V3.on) return startWalk();
-  if(k === 'b') setMode('build'); else if(k === 'v') setMode('select');
-  else if(k === 'x') setMode('delete'); else if(k === 'h') setMode('camera');
+  if(k === KEYS.turn && UI.sel.size) return transformSelection('rot');
+  if(k === KEYS.mirror && UI.sel.size) return transformSelection('mx');
+  if(k === KEYS.walk && V3.on) return startWalk();
+  if(k === KEYS.build) setMode('build'); else if(k === KEYS.select) setMode('select');
+  else if(k === KEYS.delete) setMode('delete'); else if(k === KEYS.camera) setMode('camera');
   else if(k === 'escape'){ UI.hlPin = null; setSelection([]); render(); }
   else if((k === 'delete' || k === 'backspace') && UI.sel.size){ e.preventDefault(); deleteMany([...UI.sel]); }
 });
@@ -4011,18 +4149,18 @@ function tryMove(dx, dy){
 }
 function stepWalk(dt){
   const k = WALK.keys, on = (...a) => a.some(x => k.has(x)) ? 1 : 0;
-  const fwd = on('w', 'arrowup') - on('s', 'arrowdown'), side = on('d', 'arrowright') - on('a', 'arrowleft');
-  const speed = WALK.fly ? (on('shift') ? 2600 : 1300) : (on('shift') ? 900 : 480);
+  const fwd = on(KEYS.fwd, 'arrowup') - on(KEYS.back, 'arrowdown'), side = on(KEYS.right, 'arrowright') - on(KEYS.left, 'arrowleft');
+  const speed = WALK.fly ? (on(KEYS.run) ? 2600 : 1300) : (on(KEYS.run) ? 900 : 480);
   let mx = 0, my = 0;
   if(fwd || side){
     const cy = Math.cos(WALK.yaw), sy = Math.sin(WALK.yaw), l = Math.hypot(fwd, side);
     mx = (cy*fwd - sy*side)/l*speed*dt; my = (sy*fwd + cy*side)/l*speed*dt;
   }
   if(WALK.fly){                                                      // flying goes through walls
-    WALK.x += mx; WALK.y += my; WALK.z += (on(' ') - on('c', 'control'))*speed*dt; return;
+    WALK.x += mx; WALK.y += my; WALK.z += (on(KEYS.jump) - on(KEYS.down, 'control'))*speed*dt; return;
   }
   tryMove(mx, 0); tryMove(0, my);
-  if(on(' ') && WALK.ground){ WALK.vz = 560; WALK.ground = false; }
+  if(on(KEYS.jump) && WALK.ground){ WALK.vz = 560; WALK.ground = false; }
   WALK.vz -= 1700*dt;
   let nz = WALK.z + WALK.vz*dt;
   const d = wcast(WALK.x, WALK.y, WALK.z + STEP, 0, 0, -1, STEP + 60000), floor = WALK.z + STEP - d;
@@ -4031,6 +4169,7 @@ function stepWalk(dt){
   WALK.z = nz;
 }
 function walkLook(dx, dy){ WALK.yaw += dx*0.0026; WALK.pitch = clamp(WALK.pitch - dy*0.0026, -1.45, 1.45); }
+const mouseLook = (dx, dy) => walkLook(dx*MOUSE.look, dy*MOUSE.look*(MOUSE.invLook ? -1 : 1));   // the mouse, at the speed set in Controls
 window.addEventListener('keydown', e => {
   if(!WALK.on) return;
   const tag = document.activeElement && document.activeElement.tagName;
@@ -4039,18 +4178,18 @@ window.addEventListener('keydown', e => {
   e.stopImmediatePropagation();
   if(k === 'escape'){ stopWalk(); return; }
   if(/^[0-9]$/.test(k)){ useSlot(k === '0' ? 9 : +k - 1); walkAim(); return; }
-  if(k === 'b'){ walkBuildToggle(); return; }
-  if(k === 'x'){ if(!WALK.build) walkBuildToggle(true); walkRemove(); return; }
-  if(k === 'q'){ snapCycle(e.shiftKey ? -1 : 1); return; }
-  if(k === 'e'){ if(placing()) snapTurn(); return; }
-  if(k === 'i'){                                                         // edit the hotbar: free the mouse so the slots can be clicked
+  if(k === KEYS.walkBuild){ walkBuildToggle(); return; }
+  if(k === KEYS.walkRemove){ if(!WALK.build) walkBuildToggle(true); walkRemove(); return; }
+  if(k === KEYS.snapNext){ snapCycle(e.shiftKey ? -1 : 1); return; }
+  if(k === KEYS.turnPiece){ if(placing()) snapTurn(); return; }
+  if(k === KEYS.hotbarEdit){                                             // edit the hotbar: free the mouse so the slots can be clicked
     HB_EDIT = !HB_EDIT; if(!HB_EDIT) closeHbMenu(); renderHotbar(); $('hbEdit').textContent = HB_EDIT ? 'Done' : 'Edit';
-    if(HB_EDIT){ if(document.pointerLockElement) document.exitPointerLock(); flashHint('Click a hotbar slot to change it. Press I again when you’re done.'); }
+    if(HB_EDIT){ if(document.pointerLockElement) document.exitPointerLock(); flashHint(`Click a hotbar slot to change it. Press ${keyName(KEYS.hotbarEdit)} again when you’re done.`); }
     return;
   }
-  if(k === 'f'){ WALK.fly = !WALK.fly; WALK.vz = 0; }
+  if(k === KEYS.fly && !e.repeat){ WALK.fly = !WALK.fly; WALK.vz = 0; }
   WALK.keys.add(k);
-  if([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || e.ctrlKey) e.preventDefault();
+  if([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', KEYS.jump].includes(k) || e.ctrlKey) e.preventDefault();
 }, true);
 window.addEventListener('keyup', e => { WALK.keys.delete(e.key.toLowerCase()); if(e.key === 'Shift') WALK.keys.delete('shift'); }, true);
 window.addEventListener('blur', () => WALK.keys.clear());
@@ -4347,7 +4486,7 @@ function crosshairEvent(){ const r = $('c3d').getBoundingClientRect(); return {c
 function walkBuildToggle(on){
   WALK.build = on === undefined ? !WALK.build : on;
   $('walkBuild').setAttribute('aria-pressed', String(WALK.build));
-  $('walkBuild').textContent = WALK.build ? 'Building: on (B)' : 'Building: off (B)';
+  $('walkBuild').textContent = `Building: ${WALK.build ? 'on' : 'off'} (${keyName(KEYS.walkBuild)})`;
   $('hotbar').classList.toggle('dim', WALK.on && !WALK.build);
   if(!WALK.build){ if(GHOST) GHOST.visible = false; $('walkTarget').textContent = ''; }
   else walkAim();
@@ -4358,12 +4497,12 @@ function walkAim(){
   if(performance.now() > (WALK.msgUntil || 0)) $('walkTarget').textContent = $('status3d').textContent.replace(/: drag to move it$/, ': right-click removes it');
 }
 function walkPlace(){
-  if(!WALK.build) return flashHint('Building is off. Press B to turn it back on.');
+  if(!WALK.build) return flashHint(`Building is off. Press ${keyName(KEYS.walkBuild)} to turn it back on.`);
   if(HB_EDIT) return;
   down3D(crosshairEvent()); paint = null; drag = null; walkAim();
 }
 function walkRemove(){
-  if(!WALK.build) return flashHint('Building is off. Press B to turn it back on.');
+  if(!WALK.build) return flashHint(`Building is off. Press ${keyName(KEYS.walkBuild)} to turn it back on.`);
   const h = hit3D(crosshairEvent(), false, true); if(!h) return;
   if(h.o.sk) deleteMany([h.o.sk]); else explainAuto(h.o);
   walkAim();
@@ -4422,7 +4561,7 @@ document.addEventListener('fullscreenchange', () => { $('fullBtn').textContent =
 function applyGfx(){
   if(!V3.ready) return;
   R3.setPixelRatio(pixelRatio()); R3.shadowMap.enabled = !FAST_GFX;
-  for(const m of [MAT_S, MAT_T, MAT_P, MAT_I, MAT_G, MAT_ROOF, GROUND.material]) m.needsUpdate = true;
+  for(const m of [MAT_S, MAT_T, MAT_P, MAT_I, MAT_G, MAT_ROOF, GROUND.material, ...Object.values(MAT_E)]) m.needsUpdate = true;
   size3D(); rebuild3D();
 }
 $('fastGfx').checked = FAST_GFX;
@@ -5132,6 +5271,132 @@ $('twBtn').onclick = () => {
 };
 
 
+/* ================= controls: change the keys and the mouse speeds; saved in this browser ================= */
+// [id, what it does, usual key, where it works (p: the 3D tools, w: walking), note]
+const KEY_ACTIONS = [
+  ['build', 'Build tool', 'b', 'p'], ['select', 'Select tool', 'v', 'p'], ['delete', 'Delete tool', 'x', 'p'], ['camera', 'Camera tool', 'h', 'p'],
+  ['walk', 'Start walking', 'g', 'p'], ['turn', 'Turn the selection 90°', 'r', 'p'], ['mirror', 'Mirror the selection', 'm', 'p'],
+  ['snapNext', 'Next snap point', 'q', 'pw', 'Turns a placed turret left · also while walking'],
+  ['turnPiece', 'Turn the piece', 'e', 'pw', 'Turns a placed turret right · also while walking'],
+  ['fwd', 'Forward', 'w', 'w'], ['back', 'Back', 's', 'w'], ['left', 'Left', 'a', 'w'], ['right', 'Right', 'd', 'w'],
+  ['run', 'Run (hold)', 'shift', 'w'], ['jump', 'Jump, or up when flying', ' ', 'w'], ['down', 'Down when flying', 'c', 'w'], ['fly', 'Fly on and off', 'f', 'w'],
+  ['walkBuild', 'Building on and off', 'b', 'w'], ['walkRemove', 'Remove what you aim at', 'x', 'w'], ['hotbarEdit', 'Edit the hotbar', 'i', 'w']];
+const KEY_DEFAULT = Object.fromEntries(KEY_ACTIONS.map(a => [a[0], a[2]]));
+const MOUSE_DEFAULT = {orbit:1, zoom:1, look:1, invOrbit:false, invLook:false};
+const KEYS = {...KEY_DEFAULT}, MOUSE = {...MOUSE_DEFAULT}, CTRL = {open:false, wait:null, esc:false};
+const CTRL_KEY = 'asa-base-planner:controls';
+const KEY_NAMES = {' ':'Space', shift:'Shift', pageup:'Page Up', pagedown:'Page Down', home:'Home', end:'End', insert:'Insert'};
+const KEY_RESERVED = new Set(['escape', 'tab', 'enter', 'delete', 'backspace', 'control', 'meta', 'alt', 'altgraph', 'capslock', 'contextmenu', 'dead',
+  'unidentified', 'process', 'os', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+function keyName(k){ return !k ? '' : KEY_NAMES[k] || (k.length === 1 ? k.toUpperCase() : k[0].toUpperCase() + k.slice(1)); }
+const actOf = id => KEY_ACTIONS.find(a => a[0] === id);
+const shares = (a, b) => [...a[3]].some(g => b[3].includes(g));           // both work in the same place, so they can't share a key
+function keyClash(id, k, skip){ const a = actOf(id); return KEY_ACTIONS.filter(b => b[0] !== id && b[0] !== skip && KEYS[b[0]] === k && shares(a, b)); }
+function keyProblem(id, k){
+  if(/^[0-9]$/.test(k)) return 'The number keys pick hotbar slots, so they can’t be used.';
+  if(KEY_RESERVED.has(k)) return `${keyName(k)} can’t be used as a shortcut.`;
+  if(k === 'shift' && actOf(id)[3].includes('p')) return 'Shift is held for Shift-click, so it only works for walking keys.';
+  return '';
+}
+function ctrlMsg(text, ok){ const el = $('ctrlMsg'); el.textContent = text; el.classList.toggle('ok', !!ok); }
+function saveControls(){
+  const keys = Object.fromEntries(Object.entries(KEYS).filter(([id, k]) => k !== KEY_DEFAULT[id]));
+  try { localStorage.setItem(CTRL_KEY, JSON.stringify({keys, mouse:MOUSE})); } catch(_) {}
+}
+// give action `id` the key k; if something else that works in the same place has it, the two swap
+function setKey(id, k){
+  const why = keyProblem(id, k); if(why) return ctrlMsg(why);
+  const a = actOf(id), old = KEYS[id];
+  if(old === k) return ctrlMsg(`${a[1]} is already ${keyName(k)}.`, true);
+  const clash = keyClash(id, k);
+  if(clash.length > 1) return ctrlMsg(`${keyName(k)} is already “${clash.map(b => b[1]).join('” and “')}”. Change one of those first.`);
+  if(clash.length){
+    const b = clash[0];
+    if(keyClash(b[0], old, id).length || keyProblem(b[0], old)) return ctrlMsg(`${keyName(k)} is already “${b[1]}”. Change that one first.`);
+    KEYS[b[0]] = old; ctrlMsg(`${a[1]}: ${keyName(k)}. That was “${b[1]}”, which moves to ${keyName(old)}.`, true);
+  } else ctrlMsg(`${a[1]}: ${keyName(k)}.`, true);
+  KEYS[id] = k; saveControls(); applyKeyLabels();
+}
+// every key shown on the page follows the controls
+function applyKeyLabels(){
+  const n = id => keyName(KEYS[id]);
+  document.querySelectorAll('[data-k]').forEach(el => { el.textContent = n(el.dataset.k); });
+  document.querySelectorAll('[data-ktitle]').forEach(el => { el.title = el.dataset.ktitle.replace(/\{(\w+)\}/g, (_, id) => n(id)); });
+  const move = [n('fwd'), n('left'), n('back'), n('right')];
+  $('walkHelp').textContent = `${move.every(x => x.length === 1) ? move.join('') : move.join(' ')} walk, ${n('run')} run, ${n('jump')} jump, ${n('fly')} fly (${n('jump')} up, ${n('down')} down). `
+    + `Click places at the crosshair; right-click or ${n('walkRemove')} removes. ${n('snapNext')} next snap point, ${n('turnPiece')} turn. `
+    + `1 to 0 pick, ${n('hotbarEdit')} edits the hotbar, ${n('walkBuild')} stops building. Esc leaves.`;
+  $('walkBuild').textContent = `Building: ${WALK.build ? 'on' : 'off'} (${n('walkBuild')})`;
+}
+function renderControls(){
+  const row = a => {
+    const k = KEYS[a[0]], wait = CTRL.wait === a[0];
+    return `<div class="ctrlRow"><span>${a[1]}${a[4] ? `<small>${a[4]}</small>` : ''}</span>`
+      + `<button type="button" class="keyBtn${k !== KEY_DEFAULT[a[0]] ? ' changed' : ''}" data-act="${a[0]}" aria-pressed="${wait}" `
+      + `aria-label="${a[1]}: ${keyName(k)}. Click to change it.">${wait ? 'Press a key…' : keyName(k)}</button></div>`;
+  };
+  const group = (title, cc, list) => `<div class="ctrlGroup" style="--cc:var(${cc})"><h3>${title}</h3><div class="ctrlRows">${list.map(row).join('')}</div></div>`;
+  $('ctrlKeys').innerHTML = group('Tools and building', '--m-build', KEY_ACTIONS.filter(a => a[3].includes('p')))
+    + group('Walking', '--m-walk', KEY_ACTIONS.filter(a => a[3] === 'w'));
+}
+const MOUSE_SLIDERS = {msOrbit:'orbit', msZoom:'zoom', msLook:'look'};
+function syncMouseUI(){
+  for(const [el, id] of Object.entries(MOUSE_SLIDERS)){ $(el).value = String(MOUSE[id]); $(el + 'V').textContent = MOUSE[id].toFixed(1) + '×'; }
+  $('msInvOrbit').checked = MOUSE.invOrbit; $('msInvLook').checked = MOUSE.invLook;
+}
+function openControls(){
+  const d = $('ctrlDlg'); if(d.open) return;
+  if(WALK.on) stopWalk();
+  CTRL.wait = null; ctrlMsg(''); renderControls(); syncMouseUI();
+  if(d.showModal) d.showModal(); else d.setAttribute('open', '');
+  CTRL.open = true; $('ctrlBtn').setAttribute('aria-expanded', 'true');
+}
+function closeControls(){ const d = $('ctrlDlg'); CTRL.wait = null; if(d.open){ if(d.close) d.close(); else { d.removeAttribute('open'); d.dispatchEvent(new Event('close')); } } }
+{ // what's saved from last time; if it doesn't add up, back to the usual keys
+  let d = null; try { d = JSON.parse(localStorage.getItem(CTRL_KEY)); } catch(_) {}
+  if(d && d.keys) for(const [id, k] of Object.entries(d.keys)) if(id in KEYS && typeof k === 'string' && k && !keyProblem(id, k)) KEYS[id] = k;
+  if(d && d.mouse) for(const id of Object.keys(MOUSE_DEFAULT)){
+    const v = d.mouse[id];
+    if(typeof v === typeof MOUSE_DEFAULT[id]) MOUSE[id] = typeof v === 'number' ? clamp(v, 0.3, 3) : v;
+  }
+  if(KEY_ACTIONS.some(a => keyClash(a[0], KEYS[a[0]]).length)) Object.assign(KEYS, KEY_DEFAULT);
+}
+applyKeyLabels();
+$('ctrlBtn').setAttribute('aria-expanded', 'false');
+$('ctrlBtn').onclick = openControls;
+$('ctrlClose').onclick = closeControls;
+$('ctrlDone').onclick = closeControls;
+$('guideCtrl').onclick = () => { location.hash = '#planner'; setTimeout(openControls, 60); };
+$('ctrlDlg').addEventListener('close', () => { CTRL.open = false; CTRL.wait = null; $('ctrlBtn').setAttribute('aria-expanded', 'false'); });
+$('ctrlDlg').addEventListener('cancel', e => { if(CTRL.wait || CTRL.esc) e.preventDefault(); });   // Esc while picking a key only stops picking
+$('ctrlDlg').addEventListener('click', e => { if(e.target === $('ctrlDlg')) closeControls(); });   // a click on the dark backdrop
+$('ctrlKeys').addEventListener('click', e => {
+  const b = e.target.closest('.keyBtn'); if(!b) return;
+  const id = b.dataset.act;
+  CTRL.wait = CTRL.wait === id ? null : id;
+  renderControls();
+  ctrlMsg(CTRL.wait ? `Press the key you want for “${actOf(id)[1]}”.` : '');
+  const nb = $('ctrlKeys').querySelector(`[data-act="${id}"]`); if(nb) nb.focus();
+});
+document.addEventListener('keydown', e => {                               // picking a key: this one, and nothing else gets it
+  if(!CTRL.open || !CTRL.wait) return;
+  e.preventDefault(); e.stopPropagation();
+  if(e.repeat) return;
+  const id = CTRL.wait, k = e.key.toLowerCase();
+  if(k === 'escape'){ CTRL.wait = null; CTRL.esc = true; setTimeout(() => { CTRL.esc = false; }, 0); renderControls(); ctrlMsg('No change.'); }
+  else if(e.ctrlKey || e.metaKey || e.altKey) { ctrlMsg('Use a key on its own, without Ctrl or Alt.'); return; }
+  else { CTRL.wait = null; setKey(id, k); renderControls(); }
+  const nb = $('ctrlKeys').querySelector(`[data-act="${id}"]`); if(nb) nb.focus();
+}, true);
+for(const [el, id] of Object.entries(MOUSE_SLIDERS))
+  $(el).addEventListener('input', e => { MOUSE[id] = +e.target.value; $(el + 'V').textContent = MOUSE[id].toFixed(1) + '×'; saveControls(); });
+$('msInvOrbit').onchange = e => { MOUSE.invOrbit = e.target.checked; saveControls(); };
+$('msInvLook').onchange = e => { MOUSE.invLook = e.target.checked; saveControls(); };
+$('ctrlReset').onclick = () => {
+  Object.assign(KEYS, KEY_DEFAULT); Object.assign(MOUSE, MOUSE_DEFAULT); CTRL.wait = null;
+  saveControls(); applyKeyLabels(); renderControls(); syncMouseUI(); ctrlMsg('Back to the usual keys and speeds.', true);
+};
+
 /* ================= contact ================= */
 // Fill these in when you have them: they show under the form as other ways to get in touch.
 // web3formsKey: a Web3Forms access key sends each message straight to the email above (free). Without one, messages go to
@@ -5147,6 +5412,7 @@ $('contactForm').addEventListener('submit', async e => {
   if(!form.message.value.trim()){ status.className = 'note bad'; status.textContent = 'Write a message first.'; return; }
   btn.disabled = true; status.className = 'note'; status.textContent = 'Sending\u2026';
   try {
+    form.subject.value = `ASA Base Planner: ${form.topic.value}`;          // the subject line of the email Netlify sends you
     const fd = new FormData(form);
     if(fd.get('bot-field')){ form.reset(); status.className = 'note ok'; status.textContent = 'Thanks, your message was sent!'; btn.disabled = false; return; }   // a bot
     if(CONTACT.web3formsKey){                                               // straight to the inbox
@@ -5162,7 +5428,7 @@ $('contactForm').addEventListener('submit', async e => {
     form.reset(); status.className = 'note ok'; status.textContent = 'Thanks, your message was sent!';
   } catch(err){
     status.className = 'note bad';
-    status.textContent = 'It couldn\u2019t be sent from here. The form works on the live site' + (CONTACT.email ? `, or email ${CONTACT.email}` : '') + '.';
+    status.textContent = 'It couldn\u2019t be sent just now.' + (CONTACT.email ? ` Please email ${CONTACT.email} instead.` : ' Please try again later.');
   }
   btn.disabled = false;
 });
