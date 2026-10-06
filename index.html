@@ -1436,19 +1436,19 @@ figure.shot.wide{margin:14px 0 6px}
   </dl>
   <p>Hover any tool in the planner for a tip and a short clip of it. Here are the main ones:</p>
   <div class="figs">
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/build.jpg" data-src="media/build.mp4" width="480" height="300" aria-label="Clip: placing foundations and walls"></video><figcaption><b>Build</b>: click to place, drag for a row.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/select.jpg" data-src="media/select.mp4" width="480" height="300" aria-label="Clip: dragging a box to select part of a base"></video><figcaption><b>Select</b>: drag a box round what you want.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/delete.jpg" data-src="media/delete.mp4" width="480" height="300" aria-label="Clip: deleting pieces by clicking them"></video><figcaption><b>Delete</b>: click or drag across pieces.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/walk.jpg" data-src="media/walk.mp4" width="480" height="300" aria-label="Clip: walking through a base in first person"></video><figcaption><b>Walk</b>: look round and build from inside.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/build.jpg" data-src="media/build.mp4" width="480" height="300" aria-label="Clip: placing foundations and walls"></video><figcaption><b>Build</b>: click to place, drag for a row.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/select.jpg" data-src="media/select.mp4" width="480" height="300" aria-label="Clip: dragging a box to select part of a base"></video><figcaption><b>Select</b>: drag a box round what you want.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/delete.jpg" data-src="media/delete.mp4" width="480" height="300" aria-label="Clip: deleting pieces by clicking them"></video><figcaption><b>Delete</b>: click or drag across pieces.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/walk.jpg" data-src="media/walk.mp4" width="480" height="300" aria-label="Clip: walking through a base in first person"></video><figcaption><b>Walk</b>: look round and build from inside.</figcaption></figure>
   </div>
 
   <h2>Building faster</h2>
   <p>Select some pieces and a card appears with more options:</p>
   <div class="figs">
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/move.jpg" data-src="media/move.mp4" width="480" height="300" aria-label="Clip: picking up part of a base and dropping it somewhere else"></video><figcaption><b>Move</b>: pick it up, point, click to drop.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/copycode.jpg" data-src="media/copycode.mp4" width="480" height="300" aria-label="Clip: copying the code for just the selected part"></video><figcaption><b>Copy code</b>: the code for just that part.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/repeat.jpg" data-src="media/repeat.mp4" width="480" height="300" aria-label="Clip: stacking copies of a floor on top"></video><figcaption><b>Repeat up</b>: the quick way to a tall tower.</figcaption></figure>
-    <figure class="shot"><video muted loop playsinline preload="none" poster="media/import.jpg" data-src="media/import.mp4" width="480" height="300" aria-label="Clip: adding an imported template onto a build"></video><figcaption><b>Import</b>: drop a template onto your build.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/move.jpg" data-src="media/move.mp4" width="480" height="300" aria-label="Clip: picking up part of a base and dropping it somewhere else"></video><figcaption><b>Move</b>: pick it up, point, click to drop.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/copycode.jpg" data-src="media/copycode.mp4" width="480" height="300" aria-label="Clip: copying the code for just the selected part"></video><figcaption><b>Copy code</b>: the code for just that part.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/repeat.jpg" data-src="media/repeat.mp4" width="480" height="300" aria-label="Clip: stacking copies of a floor on top"></video><figcaption><b>Repeat up</b>: the quick way to a tall tower.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" data-poster="media/import.jpg" data-src="media/import.mp4" width="480" height="300" aria-label="Clip: adding an imported template onto a build"></video><figcaption><b>Import</b>: drop a template onto your build.</figcaption></figure>
   </div>
   <ul>
     <li><b>Turn</b> and <b>Mirror</b> flip a section around; turrets keep facing out.</li>
@@ -6489,13 +6489,18 @@ $('helpCards').onchange = e => { HC.on = e.target.checked; if(!HC.on) helpHide()
 { const figs = document.querySelectorAll('figure.shot');
   for(const f of figs){ const m = f.querySelector('img'); if(m) m.addEventListener('error', () => { f.hidden = true; }); }
   const vids = [...document.querySelectorAll('figure.shot video[data-src]')];
-  const play = v => { if(STILL_ONLY.matches) return; if(!v.src) v.src = v.dataset.src; const p = v.play(); if(p) p.catch(() => {}); };
+  const play = v => {
+    if(!v.poster) v.poster = v.dataset.poster;                             // stills too load only once you get to them
+    if(STILL_ONLY.matches) return;
+    if(!v.src) v.src = v.dataset.src;
+    const p = v.play(); if(p) p.catch(() => {});
+  };
   if('IntersectionObserver' in window){
     const io = new IntersectionObserver(es => { for(const e of es) e.isIntersecting ? play(e.target) : e.target.pause(); }, {threshold:.35});
     vids.forEach(v => io.observe(v));
   } else vids.forEach(play);
   // a figure whose clip can't load still shows its still
-  vids.forEach(v => v.addEventListener('error', () => { const img = new Image(); img.src = v.poster; img.alt = v.getAttribute('aria-label') || ''; img.width = 480; img.height = 300;
+  vids.forEach(v => v.addEventListener('error', () => { const img = new Image(); img.src = v.dataset.poster; img.alt = v.getAttribute('aria-label') || ''; img.width = 480; img.height = 300;
     img.onerror = () => { v.closest('figure').hidden = true; }; v.replaceWith(img); }));
 }
 
