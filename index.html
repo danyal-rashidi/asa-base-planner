@@ -1013,6 +1013,11 @@ figure.shot img,figure.shot video{display:block;width:100%;max-width:100%;height
   border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm)}
 figure.shot figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
 figure.shot.wide{margin:14px 0 6px}
+/* examples: a heading over each group of cards */
+.exHead{margin:28px 0 4px;font-size:16px;font-weight:600;text-wrap:balance}
+.page > .doc + .exHead{margin-top:18px}
+.exSub{margin:0 0 10px;color:var(--muted);font-size:13px;max-width:65ch}
+.exHead + .exGrid{margin-top:10px}
 </style>
 </head>
 <body>
@@ -1314,7 +1319,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="create" style="--accent:var(--c-custom)">
         <h2>Examples</h2>
-        <div class="actions"><button id="exCore14s">Core cage 14×14, short</button><button id="exCore14">Core cage in 14×14 cage</button><button id="exCore6">Core cage 6×6</button><button id="exSpire">Turret spire</button><button id="exCage">Cage tower</button></div>
+        <div class="actions"><button id="exCore14s">Core cage 14×14, short</button><button id="exCore14">Core cage in 14×14 cage</button><button id="exCore6">Core cage 6×6</button><button id="exSpire">Turret spire</button><button id="exCage">Cage tower</button><button id="exPveHouse">Stone starter house</button><button id="exPveBarn">Breeding barn</button><button id="exPveFarm">Crop farm</button></div>
         <p class="note">Replaces your current design. Everything in it can be edited afterwards.</p>
       </section>
 
@@ -1520,6 +1525,7 @@ figure.shot.wide{margin:14px 0 6px}
 <section class="page" id="page-examples" hidden>
   <div class="doc"><h1>Examples</h1>
   <p class="lead">Open one to see how it's built, then change anything you like. Opening an example replaces your current design, and Ctrl+Z brings yours back.</p></div>
+  <h2 class="exHead">PvP towers</h2>
   <div class="exGrid">
     <article class="exCard" style="--accent:var(--m-pieces)">
       <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
@@ -1556,6 +1562,51 @@ figure.shot.wide{margin:14px 0 6px}
       <ul class="exStats"><li><b>20</b> floors</li><li><b>88</b> turrets</li><li><b>10</b> Tesla coils</li></ul>
       <button class="primary" data-load="cage">Open the cage tower</button>
     </article>
+  </div>
+  <h2 class="exHead">PvE bases</h2>
+  <p class="exSub">Homes and farms for building up in peace: furnish them in game once they're down.</p>
+  <div class="exGrid">
+    <article class="exCard" style="--accent:var(--c-build)">
+      <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
+        <path d="M32 50l18-30h60l18 30z" class="body"/><path d="M41 35h78M62 20l-6 30M74 20l-2 30M86 20l2 30M98 20l6 30" class="seam"/>
+        <rect x="38" y="50" width="84" height="42" class="body"/><path d="M38 71h84M54.8 50v42M71.6 50v42M88.4 50v42M105.2 50v42" class="seam"/>
+        <rect x="74" y="75" width="12" height="17" class="core"/>
+      </svg>
+      <h2>Stone starter house</h2>
+      <p>A cosy two-floor stone house on 5 × 4 foundations, with a double door at the front, a ramp up to the top floor and a pitched roof with closed gable ends. There's room for your first crafting stations downstairs and a bed and storage upstairs.</p>
+      <ul class="exStats"><li><b>2</b> floors</li><li><b>20</b> foundations</li><li><b>109</b> pieces</li></ul>
+      <p>The ramp and the sloped roof and walls use pieces not yet tested in game, so try one of each before building it all.</p>
+      <button class="primary" data-load="pveHouse">Open the house</button>
+    </article>
+    <article class="exCard" style="--accent:var(--c-utility)">
+      <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
+        <path d="M30 8H130V38H100V88H30z" class="body" style="stroke:none"/>
+        <path d="M40 8v80M50 8v80M60 8v80M70 8v80M80 8v80M90 8v80M30 18h70M30 28h70M30 38h70M30 48h70M30 58h70M30 68h70M30 78h70M110 8v30M120 8v30M100 18h30M100 28h30" class="seam"/>
+        <rect x="100" y="8" width="30" height="30" class="core"/>
+        <path d="M80 88H100V38H130V28M130 18V8H30V88H50M100 8v10M100 28v10" class="body" style="fill:none"/>
+      </svg>
+      <h2>Breeding barn</h2>
+      <p>A big metal hall two walls high, so rexes and other big dinos fit, with a 3-wide entrance open all the way up. A separate nursery behind a double door keeps eggs and babies away from the adults while you raise them.</p>
+      <ul class="exStats"><li><b>7 × 8</b> hall</li><li><b>3 × 3</b> nursery</li><li><b>204</b> pieces</li></ul>
+      <p>Every piece in it is metal and tested in game.</p>
+      <button class="primary" data-load="pveBarn">Open the barn</button>
+    </article>
+    <article class="exCard" style="--accent:var(--c-code)">
+      <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
+        <rect x="40" y="10" width="81" height="81" class="body" style="stroke:none"/>
+        <g class="core"><rect x="41" y="11" width="7" height="7" rx="1"/><rect x="41" y="20" width="7" height="7" rx="1"/><rect x="41" y="29" width="7" height="7" rx="1"/><rect x="41" y="38" width="7" height="7" rx="1"/><rect x="41" y="47" width="7" height="7" rx="1"/><rect x="41" y="56" width="7" height="7" rx="1"/><rect x="41" y="65" width="7" height="7" rx="1"/><rect x="41" y="74" width="7" height="7" rx="1"/><rect x="59" y="11" width="7" height="7" rx="1"/><rect x="59" y="20" width="7" height="7" rx="1"/><rect x="59" y="29" width="7" height="7" rx="1"/><rect x="59" y="38" width="7" height="7" rx="1"/><rect x="59" y="47" width="7" height="7" rx="1"/><rect x="59" y="56" width="7" height="7" rx="1"/><rect x="59" y="65" width="7" height="7" rx="1"/><rect x="59" y="74" width="7" height="7" rx="1"/><rect x="68" y="11" width="7" height="7" rx="1"/><rect x="68" y="20" width="7" height="7" rx="1"/><rect x="68" y="29" width="7" height="7" rx="1"/><rect x="68" y="38" width="7" height="7" rx="1"/><rect x="68" y="47" width="7" height="7" rx="1"/><rect x="68" y="56" width="7" height="7" rx="1"/><rect x="68" y="65" width="7" height="7" rx="1"/><rect x="68" y="74" width="7" height="7" rx="1"/><rect x="86" y="11" width="7" height="7" rx="1"/><rect x="86" y="20" width="7" height="7" rx="1"/><rect x="86" y="29" width="7" height="7" rx="1"/><rect x="86" y="38" width="7" height="7" rx="1"/><rect x="86" y="47" width="7" height="7" rx="1"/><rect x="86" y="56" width="7" height="7" rx="1"/><rect x="86" y="65" width="7" height="7" rx="1"/><rect x="86" y="74" width="7" height="7" rx="1"/><rect x="95" y="29" width="7" height="7" rx="1"/><rect x="95" y="38" width="7" height="7" rx="1"/><rect x="95" y="47" width="7" height="7" rx="1"/><rect x="95" y="56" width="7" height="7" rx="1"/><rect x="95" y="65" width="7" height="7" rx="1"/><rect x="95" y="74" width="7" height="7" rx="1"/><rect x="113" y="29" width="7" height="7" rx="1"/><rect x="113" y="38" width="7" height="7" rx="1"/><rect x="113" y="47" width="7" height="7" rx="1"/><rect x="113" y="56" width="7" height="7" rx="1"/><rect x="113" y="65" width="7" height="7" rx="1"/><rect x="113" y="74" width="7" height="7" rx="1"/></g>
+        <path d="M103 28H94V10H121V28H112" class="body"/><path d="M103.5 10v18M112.5 10v18M94 19h27" class="seam"/>
+        <path d="M85 91H121V10H40V91H76" class="body" style="fill:none"/>
+      </svg>
+      <h2>Crop farm</h2>
+      <p>A walled stone yard with 44 large crop plots in beds beside walkways, a double-door gate, and a small shed for your compost bins, fridge and seeds. Add a water tank and irrigation pipes in game.</p>
+      <ul class="exStats"><li><b>44</b> crop plots</li><li><b>9 × 9</b> yard</li><li><b>174</b> pieces</li></ul>
+      <p>The crop plots are pieces not yet tested in game, so place one before the rest.</p>
+      <button class="primary" data-load="pveFarm">Open the farm</button>
+    </article>
+  </div>
+  <h2 class="exHead">Or start your own</h2>
+  <div class="exGrid">
     <article class="exCard" style="--accent:var(--c-imported)">
       <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
         <rect x="46" y="34" width="68" height="56" class="body"/><path d="M80 6v44M66 36l14 14 14-14" class="seam thick"/>
@@ -2817,6 +2868,115 @@ function loadCage(){
 }
 $('exCage').onclick = loadCage;
 
+/* ================= PvE examples: a starter house, a breeding barn and a crop farm ================= */
+// a piece from the Custom list by its name (stone roofs, ramps, crop plots...)
+const pvePiece = name => CUSTOM_PRESETS.find(p => p[0] === name)[1];
+// any piece at a spot: 'surface' stands on the floor, 'wallface' is level with the middle of that floor's walls
+function pvePut(lvl, path, x, y, yaw, base, zOff = 0){
+  S.free.push({id:nextId++, lvl, kind:'custom', path, x, y, base, zOff, yaw, pitch:0, roll:0, noBack:true});
+}
+// the walls all round a set of squares: every edge with a square on one side only
+function pveOutline(cells){
+  const out = [];
+  for(const k of cells){
+    const [c, r] = k.split(',').map(Number);
+    for(const [e, nb] of [[`v,${c},${r}`, `${c - 1},${r}`], [`v,${c + 1},${r}`, `${c + 1},${r}`], [`h,${c},${r}`, `${c},${r - 1}`], [`h,${c},${r + 1}`, `${c},${r + 1}`]])
+      if(!cells.has(nb)) out.push(e);
+  }
+  return out;
+}
+
+/* Stone starter house: 5 x 4 foundations, two floors, a stone double door in the middle of the front (south),
+   a ramp up to the top floor through a gap in its floor, and a gable roof: sloped stone roofs rising from
+   the north and south walls to a ridge, with walls and sloped walls closing the east and west ends. */
+function loadPveHouse(){
+  const N = 10, c0 = 2, c1 = 6, r0 = 3, r1 = 6, door = 4;               // squares c0..c1 x r0..r1
+  const ROOF = pvePiece('Sloped roof (stone)'), RAMP = pvePiece('Ramp (stone)');
+  const SL = pvePiece('Sloped wall, left (stone)'), SR = pvePiece('Sloped wall, right (stone)');
+  Object.assign(S, {N, stories:4, h:1, roof:false, cur:0, sel:null, imp:null, gx:{}, minFloors:1, beamPosts:true});
+  S.cells = [0, 1, 2, 3].map(() => new Set()); S.edges = [0, 1, 2, 3].map(() => new Map());
+  const stair = `${c1 - 1},${r0}`;                                           // no ceiling over the ramp
+  for(let c = c0; c <= c1; c++) for(let r = r0; r <= r1; r++){
+    S.cells[0].add(`${c},${r}`);
+    if(`${c},${r}` !== stair) S.cells[1].add(`${c},${r}`);
+  }
+  for(const f of [0, 1]) for(const k of pveOutline(S.cells[0])) S.edges[f].set(k, 'wall');
+  S.edges[0].set(`h,${door},${r1 + 1}`, 'ddoor');                        // the front door
+  // gable ends, east and west: walls on the middle two squares level with the first roof row...
+  for(const c of [c0, c1 + 1]) for(let r = r0 + 1; r <= r1 - 1; r++) S.edges[2].set(`v,${c},${r}`, 'wall');
+  S.free = []; nextId = 1;
+  // ...and sloped walls under the roof (left ones rise to the south, right ones to the north; set 75 along the wall)
+  for(const c of [c0, c1 + 1]){
+    const x = c*300 - 150;
+    pvePut(2, SL, x, r0*300 - 75, 0, 'wallface'); pvePut(2, SR, x, r1*300 + 75, 0, 'wallface');
+    pvePut(3, SL, x, (r0 + 1)*300 - 75, 0, 'wallface'); pvePut(3, SR, x, (r1 - 1)*300 + 75, 0, 'wallface');
+  }
+  // the roof, two rows each side; a roof piece's yaw is the way it slopes down
+  for(let c = c0; c <= c1; c++){
+    pvePut(2, ROOF, c*300, r0*300, -90, 'wallface'); pvePut(3, ROOF, c*300, (r0 + 1)*300, -90, 'wallface');
+    pvePut(3, ROOF, c*300, (r1 - 1)*300, 90, 'wallface'); pvePut(2, ROOF, c*300, r1*300, 90, 'wallface');
+  }
+  pvePut(0, RAMP, (c1 - 1)*300, r0*300, 0, 'surface', -150);              // ramp along the back wall, rising east
+  $('stories').value = '4'; $('height').value = '1'; $('roof').checked = false; setGridSize(N);
+  $('beamPosts').checked = true; $('mat').value = 'stone'; setMaterial('stone'); $('tName').value = 'Stone starter house';
+  render();
+}
+
+/* Breeding barn: a 7 x 8 metal hall two walls high (600) so big dinos fit, with a 3-wide entrance in the middle of
+   the south wall open all the way up (the roof over it hangs on the ceilings beside it), and a 3 x 3 nursery on the
+   north-east corner behind a double door, with its own door outside, for hatching eggs and raising babies. */
+function loadPveBarn(){
+  const N = 14, c0 = 2, c1 = 8, r0 = 2, r1 = 9;                             // the hall: squares c0..c1 x r0..r1
+  const n0 = c1 + 1, n1 = c1 + 3, m1 = r0 + 2, gate = (c0 + c1)/2;          // the nursery: n0..n1 x r0..m1
+  Object.assign(S, {N, stories:1, h:2, roof:true, cur:0, sel:null, imp:null, gx:{}, minFloors:1, beamPosts:true});
+  const cells = new Set();
+  for(let c = c0; c <= c1; c++) for(let r = r0; r <= r1; r++) cells.add(`${c},${r}`);
+  for(let c = n0; c <= n1; c++) for(let r = r0; r <= m1; r++) cells.add(`${c},${r}`);
+  S.cells = [cells]; S.edges = [new Map()];
+  const E = S.edges[0];
+  for(const k of pveOutline(cells)) E.set(k, 'wall');
+  for(let r = r0; r <= m1; r++) E.set(`v,${n0},${r}`, 'wall');            // between the hall and the nursery
+  E.set(`v,${n0},${r0 + 1}`, 'ddoor');                                    // door from the hall into the nursery
+  E.set(`v,${n1 + 1},${r0 + 1}`, 'ddoor');                                // and one from outside
+  for(let c = gate - 1; c <= gate + 1; c++) E.delete(`h,${c},${r1 + 1}`);  // the entrance: no walls
+  S.free = []; nextId = 1;
+  $('stories').value = '1'; $('height').value = '2'; $('roof').checked = true; setGridSize(N);
+  $('beamPosts').checked = true; $('mat').value = 'metal'; setMaterial('metal'); $('tName').value = 'Breeding barn';
+  render();
+}
+
+/* Crop farm: a 9 x 9 stone yard walled all round with a double door in the middle of the south wall, 44 large crop
+   plots on its foundations in beds one or two wide, each beside a walkway, and a 3 x 2 shed in the north-east corner
+   with a double door and a stone ceiling for a roof (room for compost bins, a fridge and the seeds). */
+function loadPveFarm(){
+  const N = 12, c0 = 2, c1 = 10, r0 = 2, r1 = 10, door = 6;                 // the yard: squares c0..c1 x r0..r1
+  const shed = (c, r) => c >= 8 && r <= r0 + 1;                             // squares 8..10 x 2..3
+  const lanes = [3, 6, 9];                                                  // walkways north-south, and along the south wall
+  const PLOT = pvePiece('Large crop plot');
+  Object.assign(S, {N, stories:2, h:1, roof:false, cur:0, sel:null, imp:null, gx:{}, minFloors:1, beamPosts:true});
+  S.cells = [new Set(), new Set()]; S.edges = [new Map(), new Map()];
+  for(let c = c0; c <= c1; c++) for(let r = r0; r <= r1; r++){
+    S.cells[0].add(`${c},${r}`);
+    if(shed(c, r)) S.cells[1].add(`${c},${r}`);                           // the shed's ceiling
+  }
+  const E = S.edges[0];
+  for(const k of pveOutline(S.cells[0])) E.set(k, 'wall');
+  E.set(`h,${door},${r1 + 1}`, 'ddoor');                                  // the gate into the yard
+  for(let c = 8; c <= c1; c++) E.set(`h,${c},${r0 + 2}`, 'wall');          // the shed's front
+  for(let r = r0; r <= r0 + 1; r++) E.set(`v,8,${r}`, 'wall');              // and its side
+  E.set(`h,9,${r0 + 2}`, 'ddoor');                                        // its door, at the end of the east walkway
+  S.free = []; nextId = 1;
+  const PLOT_Z = (presetMeta(PLOT).z) || 10;                                // the crop plot's usual height on a foundation
+  for(let c = c0; c <= c1; c++) for(let r = r0; r < r1; r++)
+    if(!lanes.includes(c) && !shed(c, r)) pvePut(0, PLOT, c*300, r*300, 0, 'surface', PLOT_Z);
+  $('stories').value = '2'; $('height').value = '1'; $('roof').checked = false; setGridSize(N);
+  $('beamPosts').checked = true; $('mat').value = 'stone'; setMaterial('stone'); $('tName').value = 'Crop farm';
+  render();
+}
+$('exPveHouse').onclick = loadPveHouse;
+$('exPveBarn').onclick = loadPveBarn;
+$('exPveFarm').onclick = loadPveFarm;
+
 /* ================= template generation ================= */
 
 /* The template lists pieces in the order the game places them, and a piece that has nothing to snap to yet at that
@@ -4028,7 +4188,7 @@ function syncViewSlider(){
 $('viewTop').addEventListener('input', e => { V3.viewTop = +e.target.value; V3.viewAll = V3.viewTop >= levelsTotal(); syncViewSlider(); rebuild3D(); });
 
 $('storyTabs').addEventListener('click', () => { if(V3.ready){ cam.tz = planeZ(); frame3D(); } });   // a tab click moves the view to that floor
-['exSpire','exCage','exCore14','exCore14s','exCore6','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on && id !== 'impBtn') endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
+['exSpire','exCage','exCore14','exCore14s','exCore6','exPveHouse','exPveBarn','exPveFarm','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on && id !== 'impBtn') endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
 ['genBtn', 'twBtn'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on) endPaste(); }));
 $('impFile').addEventListener('change', () => setTimeout(() => { if(PASTE.on) return; V3.lastCur = null; fit3D(); rebuild3D(); }, 300));
 if(!V3.ok) $('v3d').disabled = true;
@@ -5351,6 +5511,9 @@ document.querySelectorAll('[data-load]').forEach(b => b.addEventListener('click'
   else if(what === 'core14s') $('exCore14s').click();
   else if(what === 'core6') $('exCore6').click();
   else if(what === 'cage') $('exCage').click();
+  else if(what === 'pveHouse') $('exPveHouse').click();
+  else if(what === 'pveBarn') $('exPveBarn').click();
+  else if(what === 'pveFarm') $('exPveFarm').click();
   else if(what === 'empty') $('clearAll').click();
   else if(what === 'import'){ showSideTab('create'); const box = $('impText'); const panel = box.closest('.panel'); const d = box.closest('details'); if(d) d.open = true;
     setTimeout(() => { panel.scrollIntoView({block:'start', behavior:'smooth'}); box.focus({preventScroll:true}); }, 60); }
