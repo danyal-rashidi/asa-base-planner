@@ -389,6 +389,8 @@ button:hover:not(:disabled){filter:brightness(.97)}
 .status3d{border-left:4px solid var(--mc, var(--m-build))}
 .view3d[data-mode="select"]{--mc:var(--m-select)} .view3d[data-mode="delete"]{--mc:var(--m-delete)} .view3d[data-mode="camera"]{--mc:var(--m-camera)}
 .selcard{border-top:4px solid var(--m-select);padding-top:9px}
+.selcard.groundcard{border-top-color:#7d9a52}
+.groundcard [data-gtool][aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:#fff}
 .pieces3d{border-top:4px solid var(--m-pieces)}
 
 /* the totals, by category */
@@ -1106,6 +1108,7 @@ figure.shot.wide{margin:14px 0 6px}
           <button data-mode="select" aria-pressed="false" title="Select (V)" data-ktitle="Select ({select})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.5 17 2.3-7.2L21 10.5z"/></svg><span>Select</span><kbd data-k="select">V</kbd></button>
           <button data-mode="delete" aria-pressed="false" title="Delete (X)" data-ktitle="Delete ({delete})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span><kbd data-k="delete">X</kbd></button>
           <button data-mode="camera" aria-pressed="false" title="Camera (H)" data-ktitle="Camera ({camera})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Camera</span><kbd data-k="camera">H</kbd></button>
+          <button data-mode="ground" aria-pressed="false" title="Ground (N)" data-ktitle="Ground ({ground})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19l6-9 4 5 3-3 7 7z"/></svg><span>Ground</span><kbd data-k="ground">N</kbd></button>
           <button id="walkBtn" title="Walk around inside (G)" data-ktitle="Walk around inside ({walk})"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 3 1M12 8l-1 7"/></svg><span>Walk</span><kbd data-k="walk">G</kbd></button>
           <button id="piecesBtn" aria-pressed="false" title="Show the piece totals"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
           <button id="ctrlBtn" title="Change the keys and mouse speed"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M18 10h.5M7.5 14h9"/></svg><span>Controls</span></button>
@@ -1133,6 +1136,23 @@ figure.shot.wide{margin:14px 0 6px}
             <button id="selFill">Turret fill</button>
           </div>
           <div class="selBtns"><button id="selDel" class="danger">Delete</button><button id="selNone">Clear</button></div>
+        </div>
+        <div class="selcard groundcard" id="groundCard" hidden>
+          <div class="selTitle">Ground</div>
+          <div class="selBtns" role="group" aria-label="Ground shape">
+            <button data-gshape="flat" title="Flat ground, as before">Flat</button>
+            <button data-gshape="slope" title="Falls toward you. Turn the view and click again to face it another way">Slope</button>
+            <button data-gshape="cliff" title="A drop under the front of the base, toward you">Cliff</button>
+            <button data-gshape="hill">Hill</button>
+            <button data-gshape="dip">Dip</button>
+          </div>
+          <div class="selBtns" role="group" aria-label="Brush">
+            <button data-gtool="raise" aria-pressed="true" title="Drag to raise the ground (Shift lowers)">Raise</button>
+            <button data-gtool="lower" aria-pressed="false" title="Drag to lower the ground (Shift raises)">Lower</button>
+            <button data-gtool="flatten" aria-pressed="false" title="Drag to level the ground to where you started">Flatten</button>
+          </div>
+          <div class="selRow"><span class="stepper" title="Auto puts the base on the highest ground under it, like your first foundation in game. + raises it on pillars.">Base
+            <button id="gLiftMinus" aria-label="Lower the base">−</button><b id="gLift">Auto</b><button id="gLiftPlus" aria-label="Raise the base">+</button></span></div>
         </div>
         <div class="walkHud" id="walkHud" hidden>
           <div class="cross" aria-hidden="true"></div>
@@ -1403,6 +1423,7 @@ figure.shot.wide{margin:14px 0 6px}
         <div class="row"><span>Name</span></div>
         <input type="text" id="tName" value="PvP base">
         <p class="note">To copy part of the build, select it and click <b>Copy the selection only</b> (or press <kbd>Ctrl</kbd>+<kbd>C</kbd>).</p>
+        <p class="note" id="aimNote" hidden>Uneven ground: aim the Template Hammer at the pin, on the ground under the middle of the base.</p>
         <div class="partsBox" id="partsBox" hidden></div>
         <textarea id="out" readonly aria-label="Template code"></textarea>
         <div class="actions" style="margin-top:8px">
@@ -1975,7 +1996,6 @@ function setLift(dir){
   if(lift === t.lift) return;
   const next = {...t, lift}; S.ter = terFlat(next) ? null : next; HIST.lastT = 0; render();
 }
-function sculptEnd(){}                                                     // (the brush comes with the Ground tool)
 const TER_B64 = new WeakMap();                                             // h -> base64, so the autosave doesn't redo it
 function terEnc(t){
   if(!t) return null;
@@ -3363,6 +3383,8 @@ function update(){
   syncSelection();
   recordHistory();
   rebuild3D();
+  syncGroundCard(); $('aimNote').hidden = !LAST_ANCHOR.on;
+  if(UI.mode === 'ground' && V3.on && !WALK.on) baseStatus();
 }
 
 // the template text box is filled in a moment after the last change (big templates are slow to write out)
@@ -3978,6 +4000,7 @@ function applyCam(){
   }
   const cp = Math.cos(cam.ph);
   CAM.position.set(cam.tx + cam.d*cp*Math.cos(cam.th), cam.ty + cam.d*cp*Math.sin(cam.th), cam.tz + cam.d*Math.sin(cam.ph));
+  if(TER3.mesh && TER3.mesh.visible){ const g = groundZ(CAM.position.x, -CAM.position.y) + 40; if(CAM.position.z < g) CAM.position.z = g; }   // never under a hill
   CAM.lookAt(cam.tx, cam.ty, cam.tz);
   if(SCENE && SCENE.fog){ const R = V3.radius || 3000; SCENE.fog.near = Math.max(cam.d*2.2, cam.d + R*2.5, 8000); SCENE.fog.far = SCENE.fog.near*5; }   // haze only past the far side of the build
 }
@@ -4000,10 +4023,11 @@ function rebuild3D(){
   MESHES = []; CV = {}; SKMAP = new Map(); UI.hover = null;
   syncViewSlider();
   const buckets = {}, col = new THREE.Color();
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, z1 = 300;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, z0 = 0, z1 = 300;
   for(const e of entries3D()){
     if(!visible3D(e)) continue;                                     // floors above the slider are hidden
     x0 = Math.min(x0, e.x); x1 = Math.max(x1, e.x); y0 = Math.min(y0, e.y); y1 = Math.max(y1, e.y); z1 = Math.max(z1, e.z);
+    if(S.ter) z0 = Math.min(z0, e.z - 150);
     const shape = shapeOf(e), base = ueMatrix(e.x, e.y, e.z, e.pitch || 0, e.yaw || 0, e.roll || 0);
     const selected = e.sk && UI.sel.has(e.sk), c = colorOf(shape, e);
     for(const p of partMats(shape)){
@@ -4024,22 +4048,31 @@ function rebuild3D(){
     im.castShadow = mk !== 'r'; im.receiveShadow = true;
     SCENE.add(im); MESHES.push(im);
   }
+  syncTerrain3D();
   // the sun's shadow box follows the build
   if(x0 === Infinity){ x0 = 0; x1 = S.N*300; y0 = 0; y1 = S.N*300; }
-  const cx = (x0 + x1)/2, cy = -(y0 + y1)/2, R = Math.max(1500, Math.hypot(x1 - x0, y1 - y0, z1)/2 + 600);
+  const cx = (x0 + x1)/2, cy = -(y0 + y1)/2, R = Math.max(1500, Math.hypot(x1 - x0, y1 - y0, z1 - z0)/2 + 600);
   V3.radius = R;
   // big builds spread the shadow over a wide area, so they get a sharper shadow map (unless Faster graphics is on)
   const ms = !FAST_GFX && R > 3500 ? 4096 : 2048;
   if(SUN.shadow.mapSize.x !== ms){ SUN.shadow.mapSize.set(ms, ms); if(SUN.shadow.map){ SUN.shadow.map.dispose(); SUN.shadow.map = null; } }
   const dir = new THREE.Vector3(-0.55, 0.8, 1.35).normalize();
-  SUN.target.position.set(cx, cy, z1/2); SUN.position.copy(SUN.target.position).addScaledVector(dir, R*2.2);
+  SUN.target.position.set(cx, cy, (z0 + z1)/2); SUN.position.copy(SUN.target.position).addScaledVector(dir, R*2.2);
   Object.assign(SUN.shadow.camera, {left:-R, right:R, top:R, bottom:-R, near:10, far:R*4.5}); SUN.shadow.camera.updateProjectionMatrix();
   if(GRID3){ SCENE.remove(GRID3); GRID3.geometry.dispose(); GRID3.material.dispose(); }
   const z = -9, N = S.N, lo = -150, hi = N*300 - 150;                   // build area outline on the ground
-  const pts = [lo, -lo, z, hi, -lo, z,  hi, -lo, z, hi, -hi, z,  hi, -hi, z, lo, -hi, z,  lo, -hi, z, lo, -lo, z];
+  let pts = [lo, -lo, z, hi, -lo, z,  hi, -lo, z, hi, -hi, z,  hi, -hi, z, lo, -hi, z,  lo, -hi, z, lo, -lo, z];
+  if(terNow()){                                                          // on shaped ground the outline follows it
+    pts = [];
+    const side = (xa, ya, xb, yb) => { const n = Math.max(1, Math.round(Math.hypot(xb - xa, yb - ya)/150));
+      for(let k = 0; k < n; k++){ const p = (u => [xa + (xb - xa)*u, ya + (yb - ya)*u])(k/n), q = (u => [xa + (xb - xa)*u, ya + (yb - ya)*u])((k + 1)/n);
+        pts.push(p[0], -p[1], groundZ(p[0], p[1]) + 3, q[0], -q[1], groundZ(q[0], q[1]) + 3); } };
+    side(lo, lo, hi, lo); side(hi, lo, hi, hi); side(hi, hi, lo, hi); side(lo, hi, lo, lo);
+  }
   const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
   GRID3 = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({color:new THREE.Color(cssVar('--wall')).convertSRGBToLinear()}));
   SCENE.add(GRID3);
+  syncPin();
   if(!V3.fitted){ V3.fitted = true; fit3D(); }
   if(UI.hlHover || UI.hlPin) applyGroupHL();
   R3.shadowMap.needsUpdate = true; V3.gen = (V3.gen || 0) + 1; COLL = null;
@@ -4145,8 +4178,13 @@ const planeHit = e => planeHitPt(e, isRoof() ? S.stories : S.cur);
 let RH = {key:null, hits:null};
 function rayHits(e){
   applyCam(); CAM.updateMatrixWorld();
-  const key = e.clientX + ',' + e.clientY + ',' + CAM.matrixWorld.elements.join(',') + ',' + V3.gen;
-  if(RH.key !== key){ RAYC.setFromCamera(ndc(e), CAM); RH = {key, hits:RAYC.intersectObjects(MESHES, false)}; }
+  const key = e.clientX + ',' + e.clientY + ',' + CAM.matrixWorld.elements.join(',') + ',' + V3.gen + ',' + TER3.gen;
+  if(RH.key !== key){
+    RAYC.setFromCamera(ndc(e), CAM);
+    let hits = RAYC.intersectObjects(MESHES, false);
+    if(terNow()){ const g = terRayDist(RAYC.ray); hits = hits.filter(h => h.distance <= g + 1); }   // nothing behind a hill
+    RH = {key, hits};
+  }
   return RH.hits;
 }
 function hit3D(e, ignoreFree, ignoreRoof, skip){                       // skip: selection keys to look straight through
@@ -4238,7 +4276,7 @@ function topCovered(s, k){
 function topSpotAt(e, hit){
   applyCam(); CAM.updateMatrixWorld(); RAYC.setFromCamera(ndc(e), CAM);
   const ray = RAYC.ray, eye = CAM.position, H = S.h;
-  const hitDist = hit ? eye.distanceTo(new THREE.Vector3(hit.p.x, -hit.p.y, hit.p.z)) : Infinity;
+  const hitDist = Math.min(hit ? eye.distanceTo(new THREE.Vector3(hit.p.x, -hit.p.y, hit.p.z)) : Infinity, terNow() ? terRayDist(ray) : Infinity);
   const a = new THREE.Vector3(), b = new THREE.Vector3(), onRay = new THREE.Vector3();
   let best = null;
   for(let s = 0; s < S.stories; s++){
@@ -4390,11 +4428,17 @@ const MODE_HELP = {
   select: () => 'Select: click a piece (Shift adds more) or drag a box round them. Drag a selected turret to move it. Ctrl+A selects all.',
   delete: () => 'Delete: click a piece, or drag across several. Ctrl+Z brings them back.',
   camera: () => 'Camera: drag to turn, Shift-drag to pan, scroll or pinch to zoom.',
+  ground: () => { const n = LAST_G.pillars, w = {raise:'raise', lower:'lower', flatten:'level'}[SCULPT.tool];
+    return `Ground: drag to ${w} it${SCULPT.tool === 'flatten' ? '' : ' (Shift for the other way)'}. Pillars fill in under the base${n ? ` · ${n} pillars` : ''}.`; },
 };
-const CURSOR = {build:'crosshair', select:'default', delete:'default', camera:'grab'};
+const CURSOR = {build:'crosshair', select:'default', delete:'default', camera:'grab', ground:'crosshair'};
 function setStatus(text){ const el = $('status3d'); if(el && el.textContent !== text) el.textContent = text; }
 function baseStatus(){ setStatus(MODE_HELP[UI.mode]()); }
 function setMode(m){
+  if(m !== 'ground') sculptEnd(true);
+  if(TER3.ring && m !== 'ground') TER3.ring.visible = false;
+  if(m === 'ground' && UI.sel.size){ setSelection([]); render(); }
+  $('groundCard').hidden = m !== 'ground' || WALK.on;
   if(m !== 'build' && PASTE.on) endPaste();
   if(m === 'build' && PASTE.on) PASTE.tool = 'build';                     // chose Build on purpose: Esc keeps you there
   UI.mode = m; $('view3d').dataset.mode = m;
@@ -4697,6 +4741,182 @@ function boxPick(b){
   return out;
 }
 
+/* ================= the ground in 3D, and the Ground tool ================= */
+// xs, ys: planner coordinates (increasing); two triangles a square, cut (i,j)-(i+1,j+1) like terH; faces up after the y flip
+function gridGeometry(xs, ys, zAt, uvAt){
+  const nx = xs.length, ny = ys.length, pos = new Float32Array(nx*ny*3), uv = new Float32Array(nx*ny*2), idx = [];
+  for(let j = 0; j < ny; j++) for(let i = 0; i < nx; i++){
+    const k = j*nx + i, x = xs[i], y = ys[j], [u, v] = uvAt(x, y);
+    pos[k*3] = x; pos[k*3 + 1] = -y; pos[k*3 + 2] = zAt(i, j, x, y); uv[k*2] = u; uv[k*2 + 1] = v;
+  }
+  for(let j = 0; j < ny - 1; j++) for(let i = 0; i < nx - 1; i++){ const a = j*nx + i, b = a + 1, c = a + nx + 1, d = a + nx; idx.push(a, c, b, a, d, c); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+const GROUND_UV = (x, y) => [(x + 150 + 30000)/60000, (-y - 150 + 30000)/60000];   // the flat plane's own UVs, so the grass lines up
+function syncTerrain3D(){
+  if(!V3.ready) return;
+  const t = terNow();
+  GROUND.visible = !t;                                                     // the flat plane, exactly as before, when there's no shape
+  if(!t){ if(TER3.mesh) TER3.mesh.visible = false; if(TER3.src){ TER3.src = null; TER3.gen++; } compensate(0); return; }
+  if(TER3.src !== t){                                                      // a new shape (or a stroke starting): rebuild it
+    const lo = Math.min(-150 - TER.far, t.x0 - 3000), hiX = Math.max(-150 + TER.far, t.x0 + 300*(t.n - 1) + 3000);
+    const loY = Math.min(-150 - TER.far, t.y0 - 3000), hiY = Math.max(-150 + TER.far, t.y0 + 300*(t.n - 1) + 3000);
+    const xs = [lo, ...Array.from({length:t.n}, (_, i) => t.x0 + 300*i), hiX], ys = [loY, ...Array.from({length:t.n}, (_, j) => t.y0 + 300*j), hiY];
+    const g = gridGeometry(xs, ys, (i, j) => terRaw(t, i - 1, j - 1), GROUND_UV);   // the outer ring carries the edge heights on
+    if(!TER3.mesh){ TER3.mesh = new THREE.Mesh(g, GROUND.material); TER3.mesh.receiveShadow = true; TER3.mesh.frustumCulled = false; SCENE.add(TER3.mesh); }
+    else { TER3.mesh.geometry.dispose(); TER3.mesh.geometry = g; }
+    TER3.src = t; TER3.gen++;
+  }
+  compensate(LAST_G.off);
+  TER3.mesh.position.z = GROUND_Z + LAST_G.off; TER3.mesh.visible = true;
+}
+// the land never jumps on screen: when the level moves, the camera moves with the land and the build visibly settles
+function compensate(off){
+  if(TER3.off === null){ TER3.off = off; return; }                         // first draw: nothing to keep still
+  const d = off - TER3.off; if(!d) return;
+  TER3.off = off; TER3.gen++;
+  if(SCULPT.live) return;
+  cam.tz += d; if(WALK.on) WALK.z += d;
+}
+// a stroke in progress: rewrite the mesh rows it touched (lattice row j is mesh row j + 1; the outer ring follows the edge)
+function writeTerrainRows(t, j0, j1){
+  const g = TER3.mesh && TER3.mesh.geometry; if(!g) return;
+  const n = t.n, nx = n + 2, pos = g.attributes.position.array;
+  const m0 = j0 === 0 ? 0 : j0 + 1, m1 = j1 === n - 1 ? n + 1 : j1 + 1;
+  for(let mj = m0; mj <= m1; mj++) for(let mi = 0; mi < nx; mi++) pos[(mj*nx + mi)*3 + 2] = terRaw(t, mi - 1, mj - 1);
+  g.attributes.position.needsUpdate = true; g.computeVertexNormals();
+}
+// where to aim the Template Hammer on shaped ground
+function syncPin(){
+  if(!LAST_ANCHOR.on){ if(TER3.pin) TER3.pin.visible = false; return; }
+  if(!TER3.pin){
+    const mat = new THREE.LineBasicMaterial({color:new THREE.Color(SEL_COLOR).convertSRGBToLinear(), depthTest:false});
+    const ring = []; for(let k = 0; k <= 32; k++){ const a = k/32*Math.PI*2; ring.push(new THREE.Vector3(Math.cos(a)*60, Math.sin(a)*60, 2)); }
+    TER3.pin = new THREE.Group();
+    TER3.pin.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 400)]), mat));
+    TER3.pin.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), mat));
+    TER3.pin.renderOrder = 5; TER3.pin.children.forEach(c => { c.renderOrder = 5; c.frustumCulled = false; });
+    SCENE.add(TER3.pin);
+  }
+  TER3.pin.position.set(LAST_ANCHOR.x, -LAST_ANCHOR.y, groundZ(LAST_ANCHOR.x, LAST_ANCHOR.y)); TER3.pin.visible = true;
+}
+// distance along a three.js ray (normalised) to the drawn ground, or Infinity; marched only through the ground's height range
+function terRayDist(ray){
+  const t = terNow(), o = ray.origin, d = ray.direction;
+  if(!t){ if(d.z > -1e-9) return Infinity; const s = (GROUND_Z - o.z)/d.z; return s > 0 ? s : Infinity; }
+  const base = GROUND_Z + LAST_G.off, zLo = base + t.hMin, zHi = base + t.hMax;
+  let a = 0, b = 400000;
+  if(Math.abs(d.z) < 1e-9){ if(o.z < zLo || o.z > zHi) return Infinity; }
+  else { const s1 = (zLo - o.z)/d.z, s2 = (zHi - o.z)/d.z; a = Math.max(a, Math.min(s1, s2)); b = Math.min(b, Math.max(s1, s2)); }
+  if(a > b) return Infinity;
+  const above = s => (o.z + d.z*s) - (base + terH(t, o.x + d.x*s, -(o.y + d.y*s)));
+  if(above(a) <= 0) return a;
+  const hz = Math.hypot(d.x, d.y), step = hz > 1e-6 ? Math.min(150/hz, b - a) : b - a;
+  for(let s0 = a, k = 0; s0 < b && k < 600; k++){                          // at most 600 steps of 150 sideways (past that, it's in the haze)
+    const s1 = Math.min(s0 + step, b);
+    if(above(s1) <= 0){ let lo = s0, hi = s1; for(let q = 0; q < 12; q++){ const m = (lo + hi)/2; if(above(m) > 0) lo = m; else hi = m; } return hi; }
+    s0 = s1;
+  }
+  return Infinity;
+}
+let GH = {key:null, hit:null};
+function groundHit(e){                                                     // the drawn ground under the pointer, in planner axes, or null
+  applyCam(); CAM.updateMatrixWorld();
+  const key = e.clientX + ',' + e.clientY + ',' + CAM.matrixWorld.elements.join(',') + ',' + TER3.gen;
+  if(GH.key === key) return GH.hit;
+  RAYC.setFromCamera(ndc(e), CAM);
+  const r = RAYC.ray, s = terRayDist(r);
+  GH = {key, hit: s === Infinity ? null : {x:r.origin.x + r.direction.x*s, y:-(r.origin.y + r.direction.y*s), z:r.origin.z + r.direction.z*s, dist:s}};
+  return GH.hit;
+}
+// the brush: a ring on the ground under the pointer
+function drawRing(x, y){
+  if(!TER3.ring){
+    TER3.ring = new THREE.LineLoop(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(64*3), 3)),
+      new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.9, depthTest:false}));
+    TER3.ring.renderOrder = 5; TER3.ring.frustumCulled = false; SCENE.add(TER3.ring);
+  }
+  const pos = TER3.ring.geometry.attributes.position.array, R = TER.brushR;
+  for(let k = 0; k < 64; k++){ const a = k/64*Math.PI*2, px = x + R*Math.cos(a), py = y + R*Math.sin(a); pos[k*3] = px; pos[k*3 + 1] = -py; pos[k*3 + 2] = groundZ(px, py) + 6; }
+  TER3.ring.geometry.attributes.position.needsUpdate = true; TER3.ring.visible = true;
+}
+function groundHover(e){
+  const p = groundHit(e);
+  if(p) drawRing(p.x, p.y); else if(TER3.ring) TER3.ring.visible = false;
+  frame3D();
+}
+function sculptDown(e){
+  if(e.pointerType === 'touch'){                                           // wait until it's clearly not a pinch: 100 ms or 8 px
+    SCULPT.pending = {e, x:e.clientX, y:e.clientY, timer:setTimeout(() => { const p = SCULPT.pending; if(p) sculptStart(p.e); }, 100)};
+    return;
+  }
+  sculptStart(e);
+}
+function sculptMove(e){
+  const p = SCULPT.pending;
+  if(p){ p.e = e; if(Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) sculptStart(e); return; }
+  if(SCULPT.live) SCULPT.live.ev = e;
+}
+function sculptStart(e){
+  const p = SCULPT.pending; if(p){ clearTimeout(p.timer); SCULPT.pending = null; }
+  const hit = groundHit(e); if(!hit) return;
+  const base = terEnsure(S.ter || terNew());                               // the lattice grows here, only as far as it needs to
+  const t = {x0:base.x0, y0:base.y0, n:base.n, h:Float32Array.from(base.h), lift:base.lift, hMin:base.hMin, hMax:base.hMax};
+  SCULPT.live = {before:S.ter, t, ev:e, last:performance.now(), flatTo:terH(base, hit.x, hit.y), raf:0, changed:false};
+  syncTerrain3D(); SCULPT.live.raf = requestAnimationFrame(sculptTick);
+}
+function sculptTick(now){
+  const L = SCULPT.live; if(!L) return;
+  if(S.ter !== L.before) return sculptEnd(false);                          // undone (Ctrl+Z) mid-stroke
+  const dt = Math.min(0.05, (now - L.last)/1000); L.last = now;
+  const p = groundHit(L.ev);
+  if(p){
+    const t = L.t, n = t.n, R = TER.brushR, flat = SCULPT.tool === 'flatten', down = (SCULPT.tool === 'lower') !== !!L.ev.shiftKey;
+    const i0 = Math.max(0, Math.floor((p.x - R - t.x0)/300)), i1 = Math.min(n - 1, Math.ceil((p.x + R - t.x0)/300));
+    const j0 = Math.max(0, Math.floor((p.y - R - t.y0)/300)), j1 = Math.min(n - 1, Math.ceil((p.y + R - t.y0)/300));
+    for(let j = j0; j <= j1; j++) for(let i = i0; i <= i1; i++){
+      const dx = t.x0 + 300*i - p.x, dy = t.y0 + 300*j - p.y, q = (dx*dx + dy*dy)/(R*R); if(q >= 1) continue;
+      const w = (1 - q)*(1 - q), k = j*n + i;
+      const v = flat ? t.h[k] + (L.flatTo - t.h[k])*Math.min(1, 6*dt*w) : t.h[k] + (down ? -1 : 1)*TER.rate*dt*w;
+      t.h[k] = clamp(v, -TER.maxH, TER.maxH); t.hMin = Math.min(t.hMin, t.h[k]); t.hMax = Math.max(t.hMax, t.h[k]);
+    }
+    if(i0 <= i1 && j0 <= j1){ L.changed = true; writeTerrainRows(t, j0, j1); TER3.gen++; }
+    drawRing(p.x, p.y);
+  }
+  frame3D(); L.raf = requestAnimationFrame(sculptTick);
+}
+function sculptEnd(commit){
+  const p = SCULPT.pending; if(p){ clearTimeout(p.timer); SCULPT.pending = null; }
+  const L = SCULPT.live; if(!L) return;
+  cancelAnimationFrame(L.raf); SCULPT.live = null;
+  let next = null, keep = commit && L.changed && S.ter === L.before;
+  if(keep){
+    next = terStats({x0:L.t.x0, y0:L.t.y0, n:L.t.n, h:Int16Array.from(L.t.h, v => Math.round(v)), lift:L.t.lift});
+    if(terFlat(next)) next = null;
+    if(sameGround(next, L.before)) keep = false;
+  }
+  if(!keep){ syncTerrain3D(); frame3D(); return; }                          // put the drawing back
+  S.ter = next; HIST.lastT = 0; render();                                   // one undo step; the level and the pillars update now
+}
+function sameGround(a, b){
+  if(!a || !b) return !a === !b;
+  if(a.x0 !== b.x0 || a.y0 !== b.y0 || a.n !== b.n || a.lift !== b.lift) return false;
+  for(let i = 0; i < a.h.length; i++) if(a.h[i] !== b.h[i]) return false;
+  return true;
+}
+function levelHint(off0){ if(S.ter && LAST_G.off <= off0 - 100) flashHint('Base raised to stay on top of the ground.'); }
+function syncGroundCard(){
+  for(const b of document.querySelectorAll('[data-gtool]')) b.setAttribute('aria-pressed', String(b.dataset.gtool === SCULPT.tool));
+  const l = S.ter ? S.ter.lift : 0;
+  $('gLift').textContent = l ? (l > 0 ? '+' : '−') + Math.abs(l) : 'Auto';
+  $('gLiftMinus').disabled = l <= TER.liftMin; $('gLiftPlus').disabled = l >= TER.liftMax;
+}
+document.querySelectorAll('[data-gtool]').forEach(b => b.onclick = () => { SCULPT.tool = b.dataset.gtool; syncGroundCard(); baseStatus(); });
+document.querySelectorAll('[data-gshape]').forEach(b => b.onclick = () => applyShape(b.dataset.gshape));
+$('gLiftMinus').onclick = () => setLift(-1); $('gLiftPlus').onclick = () => setLift(1);
+
 /* ---- pointer handling ---- */
 let hoverEv = null, hoverRaf = 0;
 function queueHover(e){                                                  // mice report far more often than the screen redraws
@@ -4707,6 +4927,7 @@ function queueHover(e){                                                  // mice
     if(PASTE.on) pasteGhost(ev);
     else if(UI.mode === 'build') ghostAt(ev);
     else if(UI.mode === 'select' || UI.mode === 'delete') hoverAt(ev);
+    else if(UI.mode === 'ground') groundHover(ev);
   });
 }
 function bind3D(cv){
@@ -4751,6 +4972,7 @@ function bind3D(cv){
     if(PASTE.on && e.button === 0){ e.preventDefault(); pasteAt(e); return; }
     GHOST.visible = false; setHover(null);
     if(e.pointerType === 'touch' && ptrs.size === 2){
+      sculptEnd(false);                                                  // a second finger: a pinch, not a stroke
       if(box){ for(const sk of box.lit) untint(sk); frame3D(); }
       paint = null; drag = null; orbit = null; erase = null; box = null; $('marquee').hidden = true; pinch = pinchInfo(); return;
     }
@@ -4762,7 +4984,8 @@ function bind3D(cv){
     }
     if(e.button !== 0) return;
     e.preventDefault();
-    if(UI.mode === 'build') return down3D(e);
+    if(UI.mode === 'ground') return sculptDown(e);
+    if(UI.mode === 'build'){ SCULPT.off0 = LAST_G.off; return down3D(e); }
     if(UI.mode === 'delete'){ erase = {done:new Set(), warned:false}; return eraseAt(e); }
     // select: a click picks what's under it; press and drag from anywhere, even over the build, to box-select
     const h = hit3D(e, false, true);
@@ -4788,6 +5011,7 @@ function bind3D(cv){
       if(orbit.pan || e.shiftKey && UI.mode === 'camera') panCam(dx, dy); else rotateCam(dx*MOUSE.orbit, dy*MOUSE.orbit*(MOUSE.invOrbit ? -1 : 1));
       return;
     }
+    if(SCULPT.live || SCULPT.pending){ sculptMove(e); return; }
     if(box){
       box.x1 = e.clientX; box.y1 = e.clientY;
       if(!box.live && Math.abs(box.x1 - box.x0) + Math.abs(box.y1 - box.y0) > 6){ box.live = true; setHover(null); }
@@ -4806,6 +5030,8 @@ function bind3D(cv){
       return;
     }
     ptrs.delete(e.pointerId);
+    if(SCULPT.live || SCULPT.pending) sculptEnd(e.type === 'pointerup');
+    if(SCULPT.off0 != null){ const o = SCULPT.off0; SCULPT.off0 = null; levelHint(o); }
     if(orbit && orbit.right && !orbit.moved && e.type === 'pointerup' && !PASTE.on){   // right-click: quick delete
       const h = hit3D(e, false, true);
       if(h){ if(h.o.sk) deleteMany([h.o.sk]); else explainAuto(h.o); }
@@ -4836,6 +5062,7 @@ function bind3D(cv){
   };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('pointerleave', () => {
+    if(TER3.ring && !SCULPT.live && TER3.ring.visible){ TER3.ring.visible = false; frame3D(); }
     if(GHOST.visible){ GHOST.visible = false; frame3D(); } setHover(null);
     if(PASTE.on){ PASTE.at = null; if(PASTE.group){ PASTE.group.visible = false; frame3D(); } setStatus(pasteHelp(null)); } else baseStatus();
   });
@@ -4932,6 +5159,7 @@ window.addEventListener('keydown', e => {
   if(mod && k === 'd' && UI.sel.size && V3.on){ e.preventDefault(); copySelection(); return startPaste(); }
   if(mod && k === 'a' && V3.on){ e.preventDefault(); setMode('select'); return selectAllVisible(); }
   if(mod || e.altKey) return;
+  if(k === 'escape' && (SCULPT.live || SCULPT.pending)){ sculptEnd(false); return; }
   if(k === 'escape' && !$('hbMenu').hidden){ return closeHbMenu(); }
   if(k === KEYS.snapNext && UI.mode === 'build' && !S.sel && V3.on && SNAP.list.length > 1){ snapCycle(e.shiftKey ? -1 : 1); return; }
   if(k === KEYS.turnPiece && UI.mode === 'build' && V3.on && placing()){ snapTurn(); return; }
@@ -4943,6 +5171,7 @@ window.addEventListener('keydown', e => {
   if(k === KEYS.walk && V3.on) return startWalk();
   if(k === KEYS.build) setMode('build'); else if(k === KEYS.select) setMode('select');
   else if(k === KEYS.delete) setMode('delete'); else if(k === KEYS.camera) setMode('camera');
+  else if(k === KEYS.ground && V3.on) setMode('ground');
   else if(k === 'escape'){ UI.hlPin = null; setSelection([]); render(); }
   else if((k === 'delete' || k === 'backspace') && UI.sel.size && !PASTE.on){ e.preventDefault(); deleteMany([...UI.sel]); }
 });
@@ -5402,6 +5631,7 @@ function startWalk(){
   WALK.x = (Math.min(...xs) + Math.max(...xs))/2; WALK.y = Math.max(...ys) + 700;   // just outside, facing the build
   WALK.yaw = -Math.PI/2; WALK.pitch = -0.04; WALK.vz = 0; WALK.fly = false; WALK.keys.clear();
   const d = wcast(WALK.x, WALK.y, 40000, 0, 0, -1, 80000); WALK.z = d === Infinity ? -12 : 40000 - d;
+  sculptEnd(true); $('groundCard').hidden = true;
   WALK.saved = {...cam}; WALK.on = true; $('view3d').classList.add('walking');
   HB_EDIT = false; closeHbMenu(); renderHotbar(); $('hbEdit').textContent = 'Edit';
   walkBuildToggle(true);                                                 // walking = building: click places, right-click removes
@@ -5419,6 +5649,7 @@ function stopWalk(){
   $('walkHud').hidden = true; $('walkTarget').textContent = ''; GHOST.visible = false; $('hotbar').classList.remove('dim');
   $('view3d').classList.remove('walking'); HB_EDIT = false; closeHbMenu();
   document.querySelector('.tools3d').hidden = false; $('pieces3d').classList.remove('away'); $('status3d').hidden = false; updateSelCard();
+  $('groundCard').hidden = UI.mode !== 'ground';
   baseStatus(); frame3D();
 }
 function walkTick(t){
@@ -6612,7 +6843,7 @@ $('twBtn').onclick = () => {
 /* ================= controls: change the keys and the mouse speeds; saved in this browser ================= */
 // [id, what it does, usual key, where it works (p: the 3D tools, w: walking), note]
 const KEY_ACTIONS = [
-  ['build', 'Build tool', 'b', 'p'], ['select', 'Select tool', 'v', 'p'], ['delete', 'Delete tool', 'x', 'p'], ['camera', 'Camera tool', 'h', 'p'],
+  ['build', 'Build tool', 'b', 'p'], ['select', 'Select tool', 'v', 'p'], ['delete', 'Delete tool', 'x', 'p'], ['camera', 'Camera tool', 'h', 'p'], ['ground', 'Ground tool', 'n', 'p'],
   ['walk', 'Start walking', 'g', 'p'], ['turn', 'Turn the selection 90°', 'r', 'p'], ['mirror', 'Mirror the selection', 'm', 'p'],
   ['move', 'Move the selection', 't', 'p'],
   ['snapNext', 'Next snap point', 'q', 'pw', 'Turns a placed turret left · also while walking'],
@@ -6755,6 +6986,7 @@ const HELP = {
   walk:      ['Walk', 'walk', 'Walk through your base in first person. Click builds at the crosshair, right-click removes, Esc leaves.'],
   pieces:    ['Pieces', '', 'Totals for everything you’ve built. Hover a row to light those pieces up; click it to select them.'],
   controls:  ['Controls', '', 'Change any key and the mouse speeds. You can switch these tips off there too.'],
+  ground:    ['Ground', 'ground', 'Shape the ground like your spot in ARK. The base stays level on its highest ground; pillars reach down and go into the template.', 0],
   undo:      ['Undo', 'Ctrl+Z', 'Takes back your last change.', 0],
   redo:      ['Redo', 'Ctrl+Y', 'Puts back what you undid.', 0],
   turn:      ['Turn 90°', 'turn', 'Turns the selection a quarter turn round its middle. Turrets keep facing out.'],
@@ -6771,7 +7003,7 @@ const HELP = {
   export:    ['Copy template code', '', 'Copies the code for your whole build. In game, paste it into the Template Hammer’s import.', 'copycode'],
 };
 // [element, help id, where the card goes: 'side' sits beside the selection card instead of over its buttons]
-const HELP_AT = [['[data-mode="build"]', 'build'], ['[data-mode="select"]', 'select'], ['[data-mode="delete"]', 'delete'], ['[data-mode="camera"]', 'camera'],
+const HELP_AT = [['[data-mode="build"]', 'build'], ['[data-mode="select"]', 'select'], ['[data-mode="delete"]', 'delete'], ['[data-mode="camera"]', 'camera'], ['[data-mode="ground"]', 'ground'],
   ['#walkBtn', 'walk'], ['#piecesBtn', 'pieces'], ['#ctrlBtn', 'controls'], ['#undoBtn', 'undo'], ['#redoBtn', 'redo'],
   ['#selRot', 'turn', 'side'], ['#selMirX', 'mirror', 'side'], ['#selMirY', 'mirror', 'side'], ['#selCopy', 'copy', 'side'], ['#selMove', 'move', 'side'],
   ['#selCode', 'copycode', 'side'], ['#selRepeat', 'repeat', 'side'], ['#selFill', 'fill', 'side'], ['#selDel', 'seldel', 'side'], ['#selNone', 'clear', 'side'],
