@@ -1319,7 +1319,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="create" style="--accent:var(--c-custom)">
         <h2>Examples</h2>
-        <div class="actions"><button id="exCore14s">Core cage 14×14, short</button><button id="exCore14">Core cage in 14×14 cage</button><button id="exCore6">Core cage 6×6</button><button id="exSpire">Turret spire</button><button id="exCage">Cage tower</button><button id="exPveHouse">Stone starter house</button><button id="exPveBarn">Breeding barn</button><button id="exPveFarm">Crop farm</button></div>
+        <div class="actions"><button id="exCore14s">Core cage tower</button><button id="exCore6">Core cage 6×6</button><button id="exCage">Cage tower</button><button id="exPveHouse">Stone starter house</button><button id="exPveBarn">Breeding barn</button><button id="exPveFarm">Crop farm</button></div>
         <p class="note">Replaces your current design. Everything in it can be edited afterwards.</p>
       </section>
 
@@ -1536,21 +1536,9 @@ figure.shot.wide{margin:14px 0 6px}
         <circle cx="29" cy="18" r="3.5"/><circle cx="29" cy="50" r="3.5"/><circle cx="29" cy="82" r="3.5"/><circle cx="131" cy="34" r="3.5"/><circle cx="131" cy="66" r="3.5"/></g>
       </svg>
       <h2>Core cage tower</h2>
-      <p>A 2 × 2 doorframe core with its turrets free-placed on the doorframe posts, inside a 6 × 6 turret tower, both inside a 14 × 14 doorframe cage with a triangle top. The tower rises up into the triangle with open beam tops and turrets on the beams, and more turrets stand on the ground and hang on the cage.</p>
-      <ul class="exStats"><li><b>355</b> turrets</li><li><b>2,916</b> pieces, in 2 parts</li></ul>
-      <p>The short version is 7 floors instead of 16: 211 turrets and 1,980 pieces, so it goes down in one template.</p>
-      <div class="actions"><button class="primary" data-load="core14s">Open the short one</button><button data-load="core14">Full height</button><button data-load="core6">Without the outer cage</button></div>
-    </article>
-    <article class="exCard" style="--accent:var(--c-defense)">
-      <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
-        <rect x="64" y="12" width="32" height="80" class="body"/><path d="M64 28h32M64 44h32M64 60h32M64 76h32" class="seam"/>
-        <g class="tur"><circle cx="56" cy="20" r="4"/><circle cx="56" cy="36" r="4"/><circle cx="56" cy="52" r="4"/><circle cx="56" cy="68" r="4"/><circle cx="56" cy="84" r="4"/>
-        <circle cx="104" cy="20" r="4"/><circle cx="104" cy="36" r="4"/><circle cx="104" cy="52" r="4"/><circle cx="104" cy="68" r="4"/><circle cx="104" cy="84" r="4"/></g>
-      </svg>
-      <h2>Turret spire</h2>
-      <p>A 3 × 3 metal column with turrets hanging on every face in a heavy and Tek checkerboard, a generator inside and more turrets on the roof.</p>
-      <ul class="exStats"><li><b>6</b> floors</li><li><b>80</b> turrets</li></ul>
-      <button class="primary" data-load="spire">Open the spire</button>
+      <p>A 2 × 2 core inside a 6 × 6 turret tower, inside a 14 × 14 doorframe cage with a triangle top. It fits in one template.</p>
+      <ul class="exStats"><li><b>7</b> floors</li><li><b>211</b> turrets</li><li><b>1,980</b> pieces</li></ul>
+      <div class="actions"><button class="primary" data-load="core14s">Open the tower</button><button data-load="core6">Without the outer cage</button></div>
     </article>
     <article class="exCard" style="--accent:var(--c-build)">
       <svg class="exArt" viewBox="0 0 160 100" aria-hidden="true">
@@ -2327,42 +2315,6 @@ function loadTower(){
   render();
 }
 
-/* Turret spire: a tall 3x3 core of stacked double doorframes with turrets
-   mounted sideways on the outside faces, the layout used by the big template. */
-function loadSpire(){
-  const core = []; for(let c=3;c<=5;c++) for(let r=3;r<=5;r++) core.push(`${c},${r}`);
-  const ring = [];
-  for(const r of [3,4,5]) ring.push(`v,3,${r}`, `v,6,${r}`);
-  for(const c of [3,4,5]) ring.push(`h,${c},3`, `h,${c},6`);
-  S.N = 8; S.stories = 6; S.h = 1; S.roof = true; S.cur = 0; S.sel = null; S.imp = null; S.gx = {};
-  S.cells = [new Set(core)];
-  S.edges = [new Map(ring.map(k => [k, 'wall']))];
-
-  for(let s=1;s<6;s++){ S.cells.push(new Set()); S.edges.push(new Map(ring.map(k => [k, 'dframe']))); }
-  S.free = []; nextId = 1;
-  const blank = (lvl, kind) => ({id:nextId++, lvl, kind, path:'', x:0, y:0, base:'surface', zOff:0, yaw:0, pitch:0, roll:0});
-  const g = blank(0, 'gen'); g.x = 1200; g.y = 1200; S.free.push(g);       // generator in the middle of the ground floor
-  for(let s=0;s<6;s++){                                                 // sideways turrets on every floor, 3 per face
-    for(const k of ring){
-      if(s===0 && k==='h,4,6') continue;                                // keep the entrance clear
-      const [o, cs, rs] = k.split(','); const pos = o==='v' ? +rs : +cs;
-      const f = blank(s, ((pos===4) === (s%2===0)) ? 'tek' : 'heavy');  // checkerboard of heavy and Tek
-      applyMount(f, edgeInfo(k), 'face');
-      S.free.push(f);
-    }
-  }
-  for(const c of [3,4,5]) for(const r of [3,4,5]){                      // roof: heavies on the corners, teks elsewhere
-    const f = blank('roof', (c!==4 && r!==4) ? 'heavy' : 'tek');
-    f.x = c*300; f.y = r*300; f.yaw = outwardYaw(f.x, f.y);
-    S.free.push(f);
-  }
-  $('stories').value = '6'; $('height').value = '1'; $('roof').checked = true; $('size').value = '8';
-  $('mat').value = 'metal'; setMaterial('metal'); $('tName').value = 'Turret spire';
-  render();
-}
-$('exSpire').onclick = loadSpire;
-
-
 /* Tek, heavy, Tek, heavy: along every row of every face the kinds take turns, and each row starts with the
    other kind from the row below, so anything attacking a face is hit by both kinds equally.
    Turrets standing on a floor go in a checkerboard, or take turns round a ring when `ring` gives its middle. */
@@ -2569,7 +2521,6 @@ function loadCoreCage(size, outer, tall, opt = {}){
   $('mat').value = 'metal'; setMaterial('metal'); $('tName').value = opt.name || (outer ? `Core cage in ${outer}x${outer} cage` : `Core cage ${size}x${size}`);
   render();
 }
-$('exCore14').onclick = () => loadCoreCage(6, 14);
 $('exCore14s').onclick = () => loadCoreCage(6, 14, 7);                 // the tallest version that fits in one template (1,980 pieces)
 $('exCore6').onclick = () => loadCoreCage(6);
 
@@ -4229,7 +4180,7 @@ function syncViewSlider(){
 $('viewTop').addEventListener('input', e => { V3.viewTop = +e.target.value; V3.viewAll = V3.viewTop >= levelsTotal(); syncViewSlider(); rebuild3D(); });
 
 $('storyTabs').addEventListener('click', () => { if(V3.ready){ cam.tz = planeZ(); frame3D(); } });   // a tab click moves the view to that floor
-['exSpire','exCage','exCore14','exCore14s','exCore6','exPveHouse','exPveBarn','exPveFarm','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on && id !== 'impBtn') endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
+['exCage','exCore14s','exCore6','exPveHouse','exPveBarn','exPveFarm','impBtn','clearAll'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on && id !== 'impBtn') endPaste(); V3.lastCur = null; fit3D(); rebuild3D(); }));
 ['genBtn', 'twBtn'].forEach(id => $(id).addEventListener('click', () => { if(PASTE.on) endPaste(); }));
 $('impFile').addEventListener('change', () => setTimeout(() => { if(PASTE.on) return; V3.lastCur = null; fit3D(); rebuild3D(); }, 300));
 if(!V3.ok) $('v3d').disabled = true;
@@ -5547,9 +5498,7 @@ $('navCopy').onclick = async () => {
 document.querySelectorAll('[data-load]').forEach(b => b.addEventListener('click', () => {
   const what = b.dataset.load;
   location.hash = '#planner';
-  if(what === 'spire') $('exSpire').click();
-  else if(what === 'core14') $('exCore14').click();
-  else if(what === 'core14s') $('exCore14s').click();
+  if(what === 'core14s') $('exCore14s').click();
   else if(what === 'core6') $('exCore6').click();
   else if(what === 'cage') $('exCage').click();
   else if(what === 'pveHouse') $('exPveHouse').click();

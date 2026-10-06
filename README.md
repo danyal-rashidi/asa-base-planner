@@ -23,7 +23,7 @@ A browser-based 3D planner for designing bases in **ARK: Survival Ascended**. Pl
 - **Hover tips:** hover a tool for a one-line "what to do" and a short looping clip of it (can be switched off in Controls)
 - **First-time tour:** a short spotlight tour of the planner on the first visit, which can be taken again from the Guide
 - **Illustrated guide** with pictures and clips of each tool
-- **Example designs** for PvP (core cage tower, turret spire, cage tower) and PvE to start from
+- **Example designs** for PvP (core cage tower, cage tower) and PvE (starter house, breeding barn, crop farm) to start from
 
 ## Built with
 
