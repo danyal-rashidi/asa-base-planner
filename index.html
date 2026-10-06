@@ -1044,7 +1044,7 @@ figure.shot.wide{margin:14px 0 6px}
 <section class="page" id="page-planner">
   <header>
     <h1>Plan your base</h1>
-    <p>Build a base in 3D (or on the flat plan), then copy the code into the Template Hammer's import. Your design saves in this browser as you go.</p>
+    <p>Build your base in 3D, then paste the code into the Template Hammer. Your design saves in this browser as you go.</p>
   </header>
 
   <div class="layout">
@@ -1087,9 +1087,9 @@ figure.shot.wide{margin:14px 0 6px}
       <div class="viewbar">
         <span class="actions" role="group" aria-label="View">
           <button id="v3d" aria-pressed="true">3D</button><button id="v2d" aria-pressed="false">Plan</button>
-          <button id="wideBtn" aria-pressed="false" title="Hide the side panels so the 3D view gets the whole width">Wide view</button>
+          <button id="wideBtn" aria-pressed="false" title="Hide the side panels">Wide view</button>
           <button id="fullBtn" title="Fill the whole screen (Esc to leave)">Full screen</button>
-          <label class="chk" title="Lower sharpness and no shadows: smoother on slower computers"><input type="checkbox" id="fastGfx"> Faster graphics</label>
+          <label class="chk" title="Smoother on slow computers (no shadows)"><input type="checkbox" id="fastGfx"> Faster graphics</label>
           <label class="chk" title="Pieces snap to snap points on what you aim at, like in ARK. Q picks the next snap point, E turns turrets." data-ktitle="Pieces snap to snap points on what you aim at, like in ARK. {snapNext} picks the next snap point, {turnPiece} turns turrets."><input type="checkbox" id="snapOn" checked> ARK snapping</label>
         </span>
         <span class="actions" id="camTools">
@@ -1107,7 +1107,7 @@ figure.shot.wide{margin:14px 0 6px}
           <button data-mode="delete" aria-pressed="false" title="Delete (X)" data-ktitle="Delete ({delete})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span><kbd data-k="delete">X</kbd></button>
           <button data-mode="camera" aria-pressed="false" title="Camera (H)" data-ktitle="Camera ({camera})"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Camera</span><kbd data-k="camera">H</kbd></button>
           <button id="walkBtn" title="Walk around inside (G)" data-ktitle="Walk around inside ({walk})"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M9 11l3-3 3 2 3 1M12 8l-1 7"/></svg><span>Walk</span><kbd data-k="walk">G</kbd></button>
-          <button id="piecesBtn" aria-pressed="false" title="Show the piece totals; hover one to see those pieces, click it to select them"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
+          <button id="piecesBtn" aria-pressed="false" title="Show the piece totals"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Pieces</span></button>
           <button id="ctrlBtn" title="Change the keys and mouse speed"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M18 10h.5M7.5 14h9"/></svg><span>Controls</span></button>
           <span class="tsep" aria-hidden="true"></span>
           <button id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -1122,7 +1122,7 @@ figure.shot.wide{margin:14px 0 6px}
             <button id="selMirY" title="Mirror front–back">Mirror ↕</button>
             <button id="selCopy" title="Copy and paste somewhere else (Ctrl+D)">Copy</button>
             <button id="selMove" title="Pick it up and put it somewhere else (T)" data-ktitle="Pick it up and put it somewhere else ({move})">Move</button>
-            <button id="selCode" title="Copy the Template Hammer code for just these pieces, to paste into the game">Copy code</button>
+            <button id="selCode" title="Copy the code for just these pieces">Copy code</button>
           </div>
           <div class="selBtns" id="selUnlockRow" hidden><button id="selUnlock" class="primary">Make imported pieces movable</button></div>
           <div class="selRow" id="selRepRow"><button id="selRepeat" title="Stack copies on top">Repeat up</button>
@@ -1157,7 +1157,7 @@ figure.shot.wide{margin:14px 0 6px}
       <dialog class="ctrlDlg" id="ctrlDlg" aria-labelledby="ctrlTitle">
         <div class="ctrlHead"><h2 id="ctrlTitle">Controls</h2><span>Saved in this browser</span><button type="button" class="hbmClose" id="ctrlClose" aria-label="Close">×</button></div>
         <div class="ctrlBody">
-          <p class="note">Click a key, then press the one you want instead (Esc cancels). If that key already does something else, the two swap. Handy on AZERTY keyboards: set walking to Z Q S D.</p>
+          <p class="note">Click a key, then press the new one (Esc cancels). If it's already in use, the two swap.</p>
           <p class="ctrlMsg" id="ctrlMsg" role="status"></p>
           <div id="ctrlKeys"></div>
           <div class="ctrlGroup"><h3>Mouse</h3>
@@ -1166,17 +1166,17 @@ figure.shot.wide{margin:14px 0 6px}
               <label for="msZoom">Zoom speed</label><input type="range" id="msZoom" min="0.3" max="3" step="0.1"><output id="msZoomV"></output>
               <label for="msLook">Walk look speed</label><input type="range" id="msLook" min="0.3" max="3" step="0.1"><output id="msLookV"></output>
             </div>
-            <label class="chk"><input type="checkbox" id="msInvOrbit"> Invert up and down when turning the camera</label>
-            <label class="chk"><input type="checkbox" id="msInvLook"> Invert up and down when looking around while walking</label>
+            <label class="chk"><input type="checkbox" id="msInvOrbit"> Invert camera up and down</label>
+            <label class="chk"><input type="checkbox" id="msInvLook"> Invert up and down when walking</label>
           </div>
           <div class="ctrlGroup"><h3>Help</h3>
-            <label class="chk"><input type="checkbox" id="helpCards"> Show a tip and a short clip when you hover a tool</label>
+            <label class="chk"><input type="checkbox" id="helpCards"> Show tips when you hover a tool</label>
             <p class="note"><button type="button" class="linkBtn" id="ctrlTour">Take the tour again</button></p>
           </div>
-          <div class="ctrlGroup"><h3>These stay the same</h3>
+          <div class="ctrlGroup"><h3>Fixed keys</h3>
             <p class="note ctrlFixed"><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> undo and redo · <kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> copy and paste · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>+<kbd>A</kbd> select all · <kbd>Delete</kbd> deletes the selection · <kbd>Esc</kbd> cancels · <kbd>1</kbd>–<kbd>0</kbd> hotbar · arrow keys also walk · right-drag turns the view, middle-drag pans, scroll zooms</p>
           </div>
-          <div class="actions ctrlFoot"><button type="button" id="ctrlReset">Back to the usual keys</button><button type="button" class="primary" id="ctrlDone">Done</button></div>
+          <div class="actions ctrlFoot"><button type="button" id="ctrlReset">Reset to defaults</button><button type="button" class="primary" id="ctrlDone">Done</button></div>
         </div>
       </dialog>
       <div class="resizeRow">
@@ -1185,7 +1185,7 @@ figure.shot.wide{margin:14px 0 6px}
       <div class="cornerGrip" id="cornerGrip" tabindex="0" role="separator" aria-label="Drag to change the 3D view's height and width together" title="Drag to resize both ways">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14 6L6 14M14 10L10 14"/></svg></div>
       </div>
-      <p class="note" id="legend3d">New here? <button type="button" class="linkBtn" id="legendTour">Take the quick tour</button>, or read the <a href="#guide">Guide</a>, which explains every tool and shortcut. Hover any tool for a short clip of it. Right-drag turns the view, scroll zooms, <span data-k="fwd">W</span><span data-k="left">A</span><span data-k="back">S</span><span data-k="right">D</span> moves, Ctrl+Z undoes. Press <span data-k="walk">G</span> to walk around and build in first person. Want different keys? Click <b>Controls</b>. Found a bug or have an idea? <a href="#contact">Send feedback</a>.</p>
+      <p class="note" id="legend3d">New here? <button type="button" class="linkBtn" id="legendTour">Take the quick tour</button> or read the <a href="#guide">Guide</a>. Right-drag turns the view, scroll zooms, <span data-k="fwd">W</span><span data-k="left">A</span><span data-k="back">S</span><span data-k="right">D</span> moves, <span data-k="walk">G</span> walks in first person. Bugs or ideas? <a href="#contact">Send feedback</a>.</p>
       <div class="gridbox" id="planView" hidden><svg id="grid" role="img" aria-label="Base grid"></svg></div>
       <p class="note" id="hint"></p>
     </section>
@@ -1202,7 +1202,7 @@ figure.shot.wide{margin:14px 0 6px}
       </div>
       <section class="panel" data-tab="build" id="inspector" hidden style="--accent:var(--m-select)">
         <h2>Selected piece</h2>
-        <p class="note" id="selEmpty">Click the grid to place a piece. Click a piece to select it, drag to move it, right-click to delete it.</p>
+        <p class="note" id="selEmpty">Click a piece to select it. Drag to move it, right-click to delete it.</p>
         <div id="selBox" hidden>
           <div class="fields">
             <label class="full">Piece
@@ -1254,13 +1254,13 @@ figure.shot.wide{margin:14px 0 6px}
         <div class="row"><label for="roof">Roof over top floor</label><input type="checkbox" id="roof" checked></div>
         <div class="row"><span>Swap every turret</span>
           <span class="actions"><button id="toCS">To CS</button><button id="toVan">To vanilla</button></span></div>
-        <p class="note">CS turrets are Cyber's Structures, so the server needs that mod. <span class="warn">Sideways CS turrets are untested; place one before building the whole thing.</span></p>
+        <p class="note">CS turrets need the Cyber's Structures mod. <span class="warn">Sideways CS turrets are untested: try one first.</span></p>
         <div class="row"><label for="beamPosts">Pillars under beams</label><input type="checkbox" id="beamPosts" checked></div>
         <div class="row rowStack"><span>Sideways turrets on double doorframes</span><select id="hangMode"><option value="post">On the doorframe posts</option><option value="thatch">Centred, thatch wall behind</option></select></div>
         <p class="note" id="hangNote"></p>
-        <div class="actions"><button id="hangSwitch">Switch the ones already placed</button></div>
+        <div class="actions"><button id="hangSwitch">Switch placed turrets</button></div>
         <div class="row"><label for="thatchBack">Thatch wall behind sideways pieces</label><input type="checkbox" id="thatchBack" checked></div>
-        <p class="note">Sideways turrets need a solid wall to mount on. With this on, the template puts a thatch wall there instead of the doorframe; swap it for a metal doorframe in-game after the turret is placed.</p>
+        <p class="note">Sideways turrets need a wall to mount on. Swap each thatch wall for a metal doorframe in game once the turret is up.</p>
         <details>
           <summary>Piece paths</summary>
           <label for="p_floor">Foundation</label><input type="text" id="p_floor">
@@ -1285,7 +1285,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="create" style="--accent:var(--c-custom)">
         <h2>Tower generator</h2>
-        <p class="note">Pick the sizes and it builds the tower: a 2 × 2 doorframe core (if you want one), a tower around it, and a cage around that.</p>
+        <p class="note">Pick the sizes and it builds the whole tower for you.</p>
         <div class="genGrid">
           <label>2 × 2 doorframe core<select id="genCore"><option value="yes">Yes, in the middle</option><option value="no">No core</option></select></label>
           <label>Middle tower<select id="genMid"><option>4</option><option selected>6</option><option>8</option><option>10</option></select></label>
@@ -1305,7 +1305,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="create" style="--accent:var(--c-defense)">
         <h2>Turret wall generator</h2>
-        <p class="note">A straight wall of double doorframes with turrets hanging on its front, standing on two rows of foundations. Pick how long and how tall it is.</p>
+        <p class="note">A straight wall of double doorframes with turrets on the front.</p>
         <div class="genGrid">
           <label>Length (foundations)<input type="number" id="twLen" min="2" max="96" value="10"></label>
           <label>Height (floors)<input type="number" id="twFloors" min="1" max="100" value="6"></label>
@@ -1322,12 +1322,12 @@ figure.shot.wide{margin:14px 0 6px}
       <section class="panel" data-tab="create" style="--accent:var(--c-custom)">
         <h2>Examples</h2>
         <div class="actions"><button id="exCore14s">Core cage tower</button><button id="exCore6">Core cage 6×6</button><button id="exCage">Cage tower</button><button id="exPveHouse">Stone starter house</button><button id="exPveBarn">Breeding barn</button><button id="exPveFarm">Crop farm</button></div>
-        <p class="note">Replaces your current design. Everything in it can be edited afterwards.</p>
+        <p class="note">Replaces your current design. Ctrl+Z brings it back.</p>
       </section>
 
       <section class="panel" data-tab="create" style="--accent:var(--c-imported)">
         <h2>Import a template</h2>
-        <p class="note">Paste a Template Hammer export, or pick the file. <b>Add to my build</b> lets you hold the whole thing, point where it goes (<span data-k="turn">R</span> turns it, <span data-k="mirror">M</span> mirrors it) and click to drop it onto what you've built. <b>Replace my build</b> starts fresh from it. Either way every piece can then be selected, moved, turned and deleted. Mod pieces, skins and paint are kept exactly.</p>
+        <p class="note">Paste a Template Hammer export or pick the file (or press Ctrl+V in the 3D view). <b>Add to my build</b> lets you click where it goes (<span data-k="turn">R</span> turns it, <span data-k="mirror">M</span> mirrors it). <b>Replace my build</b> starts fresh. Mod pieces, skins and paint are kept.</p>
         <textarea id="impText" aria-label="Template to import" placeholder='{"dataVersion": 1, "entries": [...]}' style="height:90px"></textarea>
         <div class="actions" style="margin-top:8px">
           <button class="primary" id="impAdd">Add to my build</button>
@@ -1341,7 +1341,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="build" style="--accent:var(--m-select)">
         <h2>Whole build</h2>
-        <p class="note">Turn, mirror or move everything at once. Turning goes round the middle of the build, 90° at a time.</p>
+        <p class="note">Turn, mirror or move everything at once.</p>
         <div class="actions">
           <button id="allRot">Turn 90°</button>
           <button id="allMirX">Mirror ↔</button>
@@ -1362,11 +1362,11 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="check" style="--accent:var(--m-delete)">
         <h2>Check before you place</h2>
-        <p class="note">Finds pieces that won't snap in game: flat pillars not chained back to a doorframe, railings with nothing under them, turrets hanging in an open doorframe or standing on nothing.</p>
+        <p class="note">Finds pieces that won't snap in game, like turrets or railings with nothing holding them up.</p>
         <button class="primary" id="checkBtn">Check placement</button>
         <div id="checkOut" class="checkOut"></div>
-        <h3 class="subHead">Compare with what placed</h3>
-        <p class="note">After placing a template, export what actually got built and paste it here. Pieces that didn't place light up red; pieces in the game that aren't in the plan show as blue boxes.</p>
+        <h3 class="subHead">Compare with the game</h3>
+        <p class="note">After placing, paste an export of what got built. Missing pieces show red, extra ones blue.</p>
         <textarea id="cmpText" placeholder='Paste the export from the game here'></textarea>
         <div class="actions"><button id="cmpBtn">Compare</button><label class="fileBtn">Choose file<input type="file" id="cmpFile" accept=".txt,.json" hidden></label><button id="cmpClear">Clear</button></div>
         <div id="cmpOut" class="checkOut"></div>
@@ -1374,7 +1374,7 @@ figure.shot.wide{margin:14px 0 6px}
 
       <section class="panel" data-tab="check" style="--accent:var(--c-imported)">
         <h2>Learn from your exports</h2>
-        <p class="note">Place a few pieces by hand the way they work in game (a turret on a doorframe post, one on a flat pillar, one hanging on a wall), export them, and paste the export here. The planner copies those exact positions for every piece like it, and offers to add any pieces it doesn't know yet.</p>
+        <p class="note">Place a few pieces by hand in game, export them and paste here. The planner then uses their exact positions for every piece like them.</p>
         <textarea id="learnText" placeholder='Paste a small export here'></textarea>
         <div class="actions"><button id="learnBtn">Learn</button><label class="fileBtn">Choose file<input type="file" id="learnFile" accept=".txt,.json" hidden></label><button id="learnReset">Back to defaults</button></div>
         <div id="learnOut"></div>
@@ -1391,7 +1391,7 @@ figure.shot.wide{margin:14px 0 6px}
       <section class="panel" data-tab="pieces" style="--accent:var(--m-pieces)">
         <h2>Pieces</h2>
         <div id="limits" class="limits"></div>
-        <p class="note">Hover a total to light those pieces up in 3D. Click it to select them all (Shift-click adds another row), then copy their code, move, turn or delete them.</p>
+        <p class="note">Hover a row to find those pieces in 3D. Click to select them (Shift-click adds more).</p>
         <div class="counts" id="counts"></div>
         <h3 class="subHead">Materials</h3>
         <div id="materials" class="materials"></div>
@@ -1401,7 +1401,7 @@ figure.shot.wide{margin:14px 0 6px}
         <h2>Template code</h2>
         <div class="row"><span>Name</span></div>
         <input type="text" id="tName" value="PvP base">
-        <p class="note">To copy just part of the build, select it (in Select, drag a box round it) and click <b>Copy the selection only</b>, or press <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
+        <p class="note">To copy part of the build, select it and click <b>Copy the selection only</b> (or press <kbd>Ctrl</kbd>+<kbd>C</kbd>).</p>
         <div class="partsBox" id="partsBox" hidden></div>
         <textarea id="out" readonly aria-label="Template code"></textarea>
         <div class="actions" style="margin-top:8px">
@@ -1416,7 +1416,7 @@ figure.shot.wide{margin:14px 0 6px}
 <section class="page doc" id="page-guide" hidden>
   <h1>How to use the planner</h1>
   <p class="lead">Build your base in 3D, then paste the code into ARK's Template Hammer. Your design saves in this browser as you go.</p>
-  <p><button type="button" class="primary" id="guideTour">Take the quick tour</button> <span class="note">Six stops round the planner, about 30 seconds.</span></p>
+  <p><button type="button" class="primary" id="guideTour">Take the quick tour</button> <span class="note">About 30 seconds.</span></p>
 
   <h2>Building</h2>
   <figure class="shot wide"><img src="media/guide-overview.jpg" width="960" height="600" loading="lazy" alt="The planner: piece tabs along the top, the 3D view with the tool bar, and the side panel on the right"><figcaption>Pick a piece in the tabs, build in the 3D view, and find settings and generators in the side panel.</figcaption></figure>
@@ -1424,22 +1424,22 @@ figure.shot.wide{margin:14px 0 6px}
     <li>Pick a piece from the tabs above the 3D view: Structure, Doors, Defense, Utility or Custom.</li>
     <li>Click the ground to lay foundations, and drag to paint a whole row.</li>
     <li>Click near the edge of a foundation to add a wall there. Click the top of your walls to start the next floor.</li>
-    <li>Turrets go wherever you click: a floor stands them up, the top of a wall puts them on top, and the side of a wall hangs them sideways.</li>
-    <li>Pieces need something holding them up, like in game. A green preview can go there; a red one can't, and the bar at the bottom says why.</li>
-    <li><b>Snap points, like in ARK:</b> aim at a piece and dots show where the one you're holding can snap to it (the big white dot is the one it'll use). Press <b data-k="snapNext">Q</b> for the next snap point (Shift+<span data-k="snapNext">Q</span> goes back) and <b data-k="turnPiece">E</b> to turn turrets and other free pieces. A flat pillar aimed at a doorframe snaps at right angles to it, and at another pillar it carries on straight or turns. Untick <b>ARK snapping</b> above the 3D view to aim freely instead.</li>
+    <li>Turrets go where you click: on a floor, on top of a wall, or hanging off its side.</li>
+    <li>Pieces need something holding them up, like in game. Green means it fits; red means it doesn't, and the bottom bar says why.</li>
+    <li><b>Snap points, like in ARK:</b> aim at a piece to see where yours can snap (the big white dot is the one it'll use). <b data-k="snapNext">Q</b> picks the next one (Shift+<span data-k="snapNext">Q</span> goes back) and <b data-k="turnPiece">E</b> turns turrets and other free pieces. Untick <b>ARK snapping</b> above the 3D view to aim freely.</li>
   </ul>
 
   <h2>Tools</h2>
   <dl class="toolList">
-    <dt><span class="modeTag" style="--m:var(--m-build)">Build · <span data-k="build">B</span></span></dt><dd>Places the piece you picked. Clicking something that's already there never removes it.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-select)">Select · <span data-k="select">V</span></span></dt><dd>Click a piece to select it, Shift-click to add more. Click and hold, then drag a box: everything inside it gets selected, on every floor that's showing, even pieces hidden behind others. Drag round the whole build to select all of it, and hold Shift to add to what you have. Drag a selected turret to move it. Double-click selects a whole floor.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-build)">Build · <span data-k="build">B</span></span></dt><dd>Places the piece you picked.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-select)">Select · <span data-k="select">V</span></span></dt><dd>Click a piece to select it, Shift-click to add more. Drag a box to select everything inside it, even hidden pieces. Double-click selects a whole floor. Drag a selected turret to move it.</dd>
     <dt><span class="modeTag" style="--m:var(--m-delete)">Delete · <span data-k="delete">X</span></span></dt><dd>Removes what you click, or hold and drag across a row of pieces.</dd>
     <dt><span class="modeTag" style="--m:var(--m-camera)">Camera · <span data-k="camera">H</span></span></dt><dd>Drag to turn the view. In any tool, right-drag also turns it, scroll zooms, middle-drag pans, and <span data-k="fwd">W</span> <span data-k="left">A</span> <span data-k="back">S</span> <span data-k="right">D</span> or the arrow keys move around (hold Shift to go faster).</dd>
-    <dt><span class="modeTag" style="--m:var(--m-walk)">Walk · <span data-k="walk">G</span></span></dt><dd>Walk through your base in first person and build as you go: click places the hotbar piece at the crosshair, right-click or <span data-k="walkRemove">X</span> removes what it's pointing at. <span data-k="fly">F</span> flies up through the floors, <span data-k="walkBuild">B</span> switches building off if you only want to look around, Esc leaves.</dd>
-    <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows along the bottom while you walk. Press a number key to pick that piece. Press <span data-k="hotbarEdit">I</span> (or click Edit) and then a slot to choose what goes on it. Your hotbar is saved in this browser.</dd>
-    <dt><span class="modeTag" style="--m:var(--cyan)">Controls</span></dt><dd>The keyboard button above the 3D view lets you change any key, the camera and zoom speed, and invert the mouse. Your keys are saved in this browser.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-camera)">View size</span></dt><dd>Drag the bar under the 3D view to make it taller or shorter (double-click it to reset). Wide view hides the side panels, Full screen fills your screen, and Faster graphics helps on slower computers.</dd>
-    <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover one to light those pieces up in orange; click it to select them all (Shift-click adds another row), then copy their code, move, turn or delete them.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-walk)">Walk · <span data-k="walk">G</span></span></dt><dd>Walk through your base in first person. Click builds, right-click or <span data-k="walkRemove">X</span> removes, <span data-k="fly">F</span> flies, <span data-k="walkBuild">B</span> turns building off, Esc leaves.</dd>
+    <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows while you walk. Number keys pick a piece; press <span data-k="hotbarEdit">I</span> (or click Edit), then a slot, to change it.</dd>
+    <dt><span class="modeTag" style="--m:var(--cyan)">Controls</span></dt><dd>The keyboard button above the 3D view lets you change any key and the mouse settings.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-camera)">View size</span></dt><dd>Drag the bar under the 3D view to resize it (double-click resets). Wide view hides the side panels; Faster graphics helps on slow computers.</dd>
+    <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover a row to light those pieces up, click to select them all.</dd>
   </dl>
   <p>Hover any tool in the planner for a tip and a short clip of it. Here are the main ones:</p>
   <div class="figs">
@@ -1460,15 +1460,15 @@ figure.shot.wide{margin:14px 0 6px}
   <ul>
     <li><b>Turn</b> and <b>Mirror</b> flip a section around; turrets keep facing out.</li>
     <li><b>Copy</b> picks the section up so you can drop a copy anywhere else.</li>
-    <li><b>Copy code</b> copies the Template Hammer code for just the selected part, to paste into the game on its own. The pillars under its beams, the thatch behind its sideways turrets and, if it reaches the top floor, the roof over it come along.</li>
-    <li><b>Move</b> (<span data-k="move">T</span>) picks the section itself up: point where it goes and click. <span data-k="turn">R</span> turns it and <span data-k="mirror">M</span> mirrors it while you hold it, Esc puts it back.</li>
+    <li><b>Copy code</b> copies the template code for just the selected part.</li>
+    <li><b>Move</b> (<span data-k="move">T</span>) picks the section itself up; click where it goes. <span data-k="turn">R</span> turns it, <span data-k="mirror">M</span> mirrors it, Esc puts it back.</li>
     <li><b>Whole build</b> (Build tab) turns, mirrors or moves everything at once.</li>
-    <li><b>Add a template:</b> copy a Template Hammer code (from the game, a friend or a website) and press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the planner. Or paste it in the Create tab and click <b>Add to my build</b>. You hold the whole import like a paste, turn it with <span data-k="turn">R</span>, and click to drop it onto what you've built, on whatever floor you point at. Its foundations, walls, doorframes and ceilings become normal planner pieces you can build on; everything else (turrets, mod pieces, skins and paint) is kept exactly. <b>Replace my build</b> starts fresh from the import instead.</li>
-    <li><b>Repeat up</b> stacks copies on top, which is the quickest way to build a tall tower.</li>
-    <li><b>Turret wall generator</b> (Create tab) builds a straight wall of doorframes with turrets on it: choose its length and height, how far apart the turrets are, posts or thatch, and what goes on top. The turrets all go on the front.</li>
-    <li><b>Tower generator</b> (side panel) builds a whole tower from a few choices, with or without the 2 × 2 core, and lowers the height by itself to stay inside your turret cap and one template.</li>
-    <li><b>Sideways turrets on double doorframes</b> (Build settings) can go on the frame's posts, where the doorframe holds them, or in the middle of the opening with a thatch wall behind to swap out later. <b>Switch the ones already placed</b> moves existing ones over.</li>
-    <li><b>Turret fill</b> puts turrets on every selected wall, hanging outside, hanging inside or on top. The mixed patterns go Tek, heavy, Tek, heavy along each face, so attackers get hit by both kinds equally.</li>
+    <li><b>Add a template:</b> copy a Template Hammer code and press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the planner (or paste it in the Create tab and click <b>Add to my build</b>), then click where it goes. <span data-k="turn">R</span> turns it. <b>Replace my build</b> starts fresh from it instead.</li>
+    <li><b>Repeat up</b> stacks copies on top.</li>
+    <li><b>Turret wall generator</b> (Create tab) builds a doorframe wall with turrets on the front, as long and tall as you choose.</li>
+    <li><b>Tower generator</b> (Create tab) builds a whole tower from a few choices, lowering it if needed to fit your turret cap and one template.</li>
+    <li><b>Sideways turrets on double doorframes</b> (Build settings) go on the frame's posts or in the middle with a thatch wall behind. <b>Switch placed turrets</b> moves existing ones over.</li>
+    <li><b>Turret fill</b> puts turrets on every selected wall: outside, inside or on top. Mixed patterns alternate Tek and heavy.</li>
   </ul>
 
   <h2>Before you place</h2>
@@ -1477,11 +1477,11 @@ figure.shot.wide{margin:14px 0 6px}
     <figure class="shot"><img src="media/guide-coverage.jpg" width="960" height="600" loading="lazy" alt="Turret coverage colouring the ground round a tower"><figcaption><b>Turret coverage</b>: the more turrets reach a spot, the brighter it gets.</figcaption></figure>
   </div>
   <ul>
-    <li><b>Check placement</b> marks in red every piece that won't snap in game: flat pillars that don't chain back to a pillar lying on a doorframe, railings with nothing under them, turrets hanging in an open doorframe or standing on nothing.</li>
-    <li><b>Compare with what placed</b>: after placing, export what got built and paste it in. Missing pieces light up red, extra ones show as blue boxes.</li>
-    <li><b>Learn from your exports</b>: place a few pieces by hand the way they really work, export them, and the planner copies those exact positions for every piece like it.</li>
+    <li><b>Check placement</b> marks in red every piece that won't snap in game.</li>
+    <li><b>Compare with the game</b>: after placing, paste an export of what got built. Missing pieces show red, extra ones blue.</li>
+    <li><b>Learn from your exports</b>: export a few pieces you placed by hand and the planner copies their exact positions.</li>
     <li><b>Turret coverage</b> colours the ground by how many turrets can hit each spot.</li>
-    <li>The <b>Pieces</b> panel shows your turret count against your server's cap and the piece count against the 2,000 limit, plus the materials it all needs.</li>
+    <li>The <b>Pieces</b> panel counts turrets against your server's cap and pieces against the 2,000 limit, and adds up the materials.</li>
   </ul>
 
   <h2>Getting it into ARK</h2>
@@ -1490,15 +1490,15 @@ figure.shot.wide{margin:14px 0 6px}
     <li>Click <b>Copy template code</b> at the top of the page.</li>
     <li>In game, open the Template Hammer's import and paste the code.</li>
     <li>Place the template where you want the base.</li>
-    <li>The Template Hammer takes at most 2,000 pieces per template. Bigger builds show a <b>Copy part 1</b>, <b>Copy part 2</b>… box instead: place part 1, then each next part on top of the one below.</li>
+    <li>Over 2,000 pieces? The code splits into <b>Copy part 1</b>, <b>Copy part 2</b> and so on. Place part 1, then each next part on top.</li>
     <li>If you hung turrets sideways, each one has a thatch wall behind it. Swap those for metal doorframes once the turrets are up.</li>
   </ol>
 
   <h2>Good to know</h2>
   <ul>
-    <li>CS turrets come from the Cyber's Structures mod, so the server needs it. Place one sideways CS turret to test before building a whole tower of them.</li>
+    <li>CS turrets need the Cyber's Structures mod on the server. Test one sideways before building a whole tower.</li>
     <li>Tesla coils need the Bob's Tall Tales DLC.</li>
-    <li>Check your server's turret limit before building big towers. The Pieces panel counts every turret for you.</li>
+    <li>Check your server's turret limit before building big towers.</li>
     <li>Designs are saved in this browser only. Copy the template code somewhere safe to keep a backup.</li>
   </ul>
 
@@ -1506,9 +1506,9 @@ figure.shot.wide{margin:14px 0 6px}
   <table class="keys">
     <tbody>
       <tr><td><kbd data-k="build">B</kbd> <kbd data-k="select">V</kbd> <kbd data-k="delete">X</kbd> <kbd data-k="camera">H</kbd> <kbd data-k="walk">G</kbd></td><td>Build, Select, Delete, Camera, Walk</td></tr>
-      <tr><td><kbd data-k="turn">R</kbd> / <kbd data-k="mirror">M</kbd></td><td>Turn or mirror the selection (or the copy you're about to paste)</td></tr>
-      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy the selection and paste it. Ctrl+C also copies its Template Hammer code, and Ctrl+V adds any Template Hammer code you've copied to your build.</td></tr>
-      <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Copy the selection and paste it straight away</td></tr>
+      <tr><td><kbd data-k="turn">R</kbd> / <kbd data-k="mirror">M</kbd></td><td>Turn or mirror the selection</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy and paste the selection. Ctrl+C also copies its template code, and Ctrl+V adds a template code copied anywhere else.</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate the selection</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select everything you can see</td></tr>
       <tr><td><kbd>Delete</kbd></td><td>Delete the selection</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Undo and redo</td></tr>
@@ -1518,7 +1518,7 @@ figure.shot.wide{margin:14px 0 6px}
       <tr><td><kbd>Esc</kbd></td><td>Clear the selection, stop pasting, or leave walk mode</td></tr>
       <tr><td><kbd data-k="fwd">W</kbd> <kbd data-k="left">A</kbd> <kbd data-k="back">S</kbd> <kbd data-k="right">D</kbd> or arrow keys</td><td>Move the camera (Shift goes faster)</td></tr>
       <tr><td><kbd data-k="fwd">W</kbd> <kbd data-k="left">A</kbd> <kbd data-k="back">S</kbd> <kbd data-k="right">D</kbd>, <kbd data-k="run">Shift</kbd>, <kbd data-k="jump">Space</kbd>, <kbd data-k="fly">F</kbd></td><td>Walk mode: move, run, jump, fly</td></tr>
-      <tr><td><kbd data-k="walkBuild">B</kbd> (walking)</td><td>Switch building off (and back on) while you walk</td></tr>
+      <tr><td><kbd data-k="walkBuild">B</kbd> (walking)</td><td>Turn building on or off while walking</td></tr>
     </tbody>
   </table>
   <p>Rather use other keys? <button type="button" class="primary" id="guideCtrl">Change the controls</button></p>
@@ -1527,7 +1527,7 @@ figure.shot.wide{margin:14px 0 6px}
 
 <section class="page" id="page-examples" hidden>
   <div class="doc"><h1>Examples</h1>
-  <p class="lead">Open one to see how it's built, then change anything you like. Opening an example replaces your current design, and Ctrl+Z brings yours back.</p></div>
+  <p class="lead">Opening an example replaces your current design. Ctrl+Z brings yours back.</p></div>
   <h2 class="exHead">PvP towers</h2>
   <div class="exGrid">
     <article class="exCard" style="--accent:var(--m-pieces)">
@@ -1540,36 +1540,36 @@ figure.shot.wide{margin:14px 0 6px}
     <article class="exCard" style="--accent:var(--c-build)">
       <img class="exShot" src="media/examples/cage.jpg" width="960" height="600" loading="lazy" alt="The cage tower in 3D: a tall doorframe cage around a turret core">
       <h2>Cage tower</h2>
-      <p>An 11 × 11 doorframe cage around a turret core, with two vault rooms and a railing roof. The design is P1agueTV's, from his template on Wikily.</p>
+      <p>An 11 × 11 doorframe cage around a turret core, with two vaults and a railing roof. Design by P1agueTV.</p>
       <ul class="exStats"><li><b>20</b> floors</li><li><b>88</b> turrets</li><li><b>10</b> Tesla coils</li></ul>
       <button class="primary" data-load="cage">Open the cage tower</button>
     </article>
   </div>
   <h2 class="exHead">PvE bases</h2>
-  <p class="exSub">Homes and farms for building up in peace: furnish them in game once they're down.</p>
+  <p class="exSub">Homes and farms to furnish in game once they're down.</p>
   <div class="exGrid">
     <article class="exCard" style="--accent:var(--c-build)">
       <img class="exShot" src="media/examples/pveHouse.jpg" width="960" height="600" loading="lazy" alt="The stone starter house in 3D: two floors with a pitched roof and a double door">
       <h2>Stone starter house</h2>
-      <p>A cosy two-floor stone house on 5 × 4 foundations, with a double door at the front, a ramp up to the top floor and a pitched roof with closed gable ends. There's room for your first crafting stations downstairs and a bed and storage upstairs.</p>
+      <p>A cosy two-floor stone house with a double door, a ramp upstairs and a pitched roof. Room for crafting downstairs and a bed and storage upstairs.</p>
       <ul class="exStats"><li><b>2</b> floors</li><li><b>20</b> foundations</li><li><b>109</b> pieces</li></ul>
-      <p>The ramp and the sloped roof and walls use pieces not yet tested in game, so try one of each before building it all.</p>
+      <p>The ramp and sloped pieces are untested in game: try one of each first.</p>
       <button class="primary" data-load="pveHouse">Open the house</button>
     </article>
     <article class="exCard" style="--accent:var(--c-utility)">
       <img class="exShot" src="media/examples/pveBarn.jpg" width="960" height="600" loading="lazy" alt="The breeding barn in 3D: a tall open hall with a nursery in one corner">
       <h2>Breeding barn</h2>
-      <p>A big metal hall two walls high, so rexes and other big dinos fit, with a 3-wide entrance open all the way up. A separate nursery behind a double door keeps eggs and babies away from the adults while you raise them.</p>
+      <p>A tall metal hall big enough for rexes, with a separate nursery for eggs and babies.</p>
       <ul class="exStats"><li><b>7 × 8</b> hall</li><li><b>3 × 3</b> nursery</li><li><b>204</b> pieces</li></ul>
-      <p>Every piece in it is metal and tested in game.</p>
+      <p>Every piece is tested in game.</p>
       <button class="primary" data-load="pveBarn">Open the barn</button>
     </article>
     <article class="exCard" style="--accent:var(--c-code)">
       <img class="exShot" src="media/examples/pveFarm.jpg" width="960" height="600" loading="lazy" alt="The crop farm in 3D: a walled yard of crop plots with a small shed">
       <h2>Crop farm</h2>
-      <p>A walled stone yard with 44 large crop plots in beds beside walkways, a double-door gate, and a small shed for your compost bins, fridge and seeds. Add a water tank and irrigation pipes in game.</p>
+      <p>A walled stone yard of crop plots, with a shed for compost bins, a fridge and seeds. Add water and irrigation in game.</p>
       <ul class="exStats"><li><b>44</b> crop plots</li><li><b>9 × 9</b> yard</li><li><b>174</b> pieces</li></ul>
-      <p>The crop plots are pieces not yet tested in game, so place one before the rest.</p>
+      <p>Crop plots are untested in game: place one first.</p>
       <button class="primary" data-load="pveFarm">Open the farm</button>
     </article>
   </div>
@@ -1580,7 +1580,7 @@ figure.shot.wide{margin:14px 0 6px}
         <rect x="46" y="34" width="68" height="56" class="body"/><path d="M80 6v44M66 36l14 14 14-14" class="seam thick"/>
       </svg>
       <h2>Your own template</h2>
-      <p>Paste a Template Hammer export, like one a friend sent you, then drop it onto your build or start fresh from it. Every piece can be moved, turned and edited.</p>
+      <p>Paste a Template Hammer export, like one a friend sent you, and add it to your build or start fresh from it.</p>
       <button class="primary" data-load="import">Import a template</button>
     </article>
     <article class="exCard" style="--accent:var(--c-auto)">
@@ -1617,13 +1617,13 @@ figure.shot.wide{margin:14px 0 6px}
 </section>
 <section class="page doc" id="page-about" hidden>
   <h1>About</h1>
-  <p class="lead">ASA Base Planner is a free, fan-made tool for planning ARK: Survival Ascended PvP bases and turning them into Template Hammer code.</p>
+  <p class="lead">ASA Base Planner is a free, fan-made tool for planning ARK: Survival Ascended bases and turning them into Template Hammer code.</p>
   <h2>What it does</h2>
-  <p>You build in 3D with the same pieces you use in game: foundations, walls, doorframes, ceilings, pillars and turrets, including turrets hung sideways on walls. The planner writes the Template Hammer code for you, with the right heights and rotations, so the base goes down in game the way you drew it.</p>
+  <p>Build in 3D with the same pieces you use in game, and the planner writes the Template Hammer code so it goes down exactly as you drew it.</p>
   <h2>Your designs</h2>
   <p>Everything you build is saved in this browser only. Nothing is uploaded or shared unless you copy the template code and send it yourself.</p>
   <h2>Credits</h2>
-  <p>The cage tower example is rebuilt from P1agueTV's cage tower template, shared on Wikily. The design is his.</p>
+  <p>The cage tower example is P1agueTV's design, from his template on Wikily.</p>
   <p class="note">Not made by or affiliated with Studio Wildcard. ARK: Survival Ascended belongs to its owners.</p>
   <p><a class="btnLink" href="#planner">Open the planner</a></p>
 </section>
@@ -1982,11 +1982,11 @@ function render(opts={}){
   }
   }
   let hint;
-  if(placing() && S.snap==='face') hint = roof ? 'The roof has no walls. Change Snap to place pieces on the roof.' : 'Click next to a wall or doorframe to mount the piece sideways on its outside face, level with the middle of the wall. Use Height offset +300 / -300 to move it to another wall row.';
-  else if(placing() && S.snap==='edge') hint = roof ? 'The roof has no walls. Change Snap to place pieces on the roof.' : 'Click next to a wall or doorframe to put the piece on top of it. Drag to move it along the walls, right-click to delete.';
+  if(placing() && S.snap==='face') hint = roof ? 'The roof has no walls. Change Snap to place pieces on the roof.' : 'Click next to a wall or doorframe to hang the piece on its outside. Height offset +300 / -300 moves it up or down a row.';
+  else if(placing() && S.snap==='edge') hint = roof ? 'The roof has no walls. Change Snap to place pieces on the roof.' : 'Click next to a wall or doorframe to put the piece on top. Drag to move, right-click to delete.';
   else if(placing()) hint = 'Click anywhere to place. Drag to move, right-click to delete. The line shows which way it faces.';
   else if(roof) hint = 'This is the roof. Pick something from Defense, Utility or Custom to put on it.';
-  else if(S.piece.type==='cell') hint = s===0 ? 'Click or drag on squares to place foundations.' : 'Click or drag on squares to place ceilings (the floor of this level). Faint squares show the floor below.';
+  else if(S.piece.type==='cell') hint = s===0 ? 'Click or drag on squares to place foundations.' : 'Click or drag on squares to place ceilings. Faint squares show the floor below.';
   else hint = 'Click or drag along the lines between squares.';
   if(!$('hint').classList.contains('warn')) $('hint').textContent = hint;
   $('copyBelow').disabled = s===0;
@@ -2688,7 +2688,7 @@ function importAdd(text){
   const [px, py] = pivotOf(items, 300);
   for(const it of items){ it.x -= px; it.y -= py; if(it.f){ it.f.x = it.x; it.f.y = it.y; } }
   startPaste(items, {mode:'import'});
-  return `Holding ${importNote(info, t.raw.length)} Point where it goes and click to add it. ${keyName(KEYS.turn)} turns it, ${keyName(KEYS.mirror)} mirrors it, Esc cancels.`;
+  return `Holding ${importNote(info, t.raw.length)} Click where it goes. ${keyName(KEYS.turn)} turns it, ${keyName(KEYS.mirror)} mirrors it, Esc cancels.`;
 }
 // Start a fresh design from an import (what Import used to do), with everything editable.
 function importReplace(text){
@@ -2710,7 +2710,7 @@ function importReplace(text){
   $('stories').value = String(S.stories);
   $('tName').value = (t.obj.name || 'Imported build').trim();
   UI.sel.clear(); render();
-  return `Imported ${importNote(info, t.raw.length)} Everything can be selected, moved, turned and deleted.`;
+  return `Imported ${importNote(info, t.raw.length)}`;
 }
 // Builds imported before pieces could move: turn them into ordinary pieces, right where they are.
 function unlockLegacyImport(){
@@ -2721,7 +2721,7 @@ function unlockLegacyImport(){
   const placed = placeItems(items, 0);
   if(!placed){ undoQuiet(had); flashHint('Couldn’t unlock the imported pieces.'); return; }
   setSelection(placed); setMode('select'); render();
-  flashHint(`${placed.length} imported pieces can now be moved, turned and copied like any other.`);
+  flashHint(`${placed.length} imported pieces are now movable.`);
 }
 function refreshImportLevels(){ if(S.imp) for(const it of S.imp.items) it.lvl = impLevel(it.z); }
 $('impAdd').onclick = () => { $('impNote').textContent = importAdd($('impText').value); };
@@ -3114,13 +3114,13 @@ function selectionTemplate(sks){
 // copy just the selected part's template code to the clipboard
 async function copySelectionCode(btn){
   const sks = [...UI.sel];
-  if(!sks.length) return flashHint('Select the part you want first: in Select, drag a box round it.');
+  if(!sks.length) return flashHint('Select the part you want first.');
   const r = selectionTemplate(sks);
   if(!r.n) return flashHint(r.old ? OLD_IMPORT_MSG : 'Nothing to copy there.');
   if(r.n > TPL_CAP) return flashHint(`That part has ${r.n.toLocaleString()} pieces; the Template Hammer takes at most ${TPL_CAP.toLocaleString()}. Select a smaller part.`);
   const code = JSON.stringify(r.tpl, null, '\t'), ok = await copyText(code);
   if(ok) CLIP.code = code;
-  flashHint(ok ? `Copied the code for just this part: ${r.n.toLocaleString()} ${r.n === 1 ? 'piece' : 'pieces'}. Paste it into the Template Hammer import.`
+  flashHint(ok ? `Copied the code for ${r.n.toLocaleString()} ${r.n === 1 ? 'piece' : 'pieces'}. Paste it into the Template Hammer import.`
     + (r.old ? ` (${r.old} old imported ${r.old === 1 ? 'piece was' : 'pieces were'} left out: make them movable first.)` : '')
     : 'Couldn’t reach the clipboard. Use the Code tab instead.');
   if(btn){ const t = btn.textContent; btn.textContent = ok ? 'Copied' : 'Couldn’t copy'; setTimeout(() => { btn.textContent = t; }, 1600); }
@@ -3226,7 +3226,7 @@ function flushOut(){
   const box = $('partsBox');
   if(OUT_PARTS){
     const fl = f => f === 0 ? 'ground' : 'floor ' + (f + 1);
-    box.innerHTML = `<p><b>This build has ${OUT_TPL.entries.length.toLocaleString()} pieces.</b> The Template Hammer only takes ${TPL_CAP.toLocaleString()} per template and drops the rest, so it's split by height into ${OUT_PARTS.length} parts of about the same size. Place part 1 first, then each next part on top of the one below.</p>`
+    box.innerHTML = `<p><b>This build has ${OUT_TPL.entries.length.toLocaleString()} pieces.</b> The Template Hammer takes ${TPL_CAP.toLocaleString()} at most, so it's split into ${OUT_PARTS.length} parts. Place part 1 first, then each next part on top.</p>`
       + `<div class="actions">${OUT_PARTS.map((p, i) => `<button class="primary" data-part="${i}">Copy part ${i + 1}</button><span class="note">${fl(p.from)}${p.to !== p.from ? ' to ' + fl(p.to) : ''}, ${p.entries.length.toLocaleString()} pieces</span>`).join('')}</div>`;
     box.hidden = false;
   } else { box.hidden = true; box.innerHTML = ''; }
@@ -4208,9 +4208,9 @@ if(!V3.ok) $('v3d').disabled = true;
 const UI = {mode:'build', sel:new Set(), hover:null, hoverHex:null};
 const MODE_HELP = {
   build:  () => placing()
-    ? `Build · ${S.piece.label}: click a floor, the top of a wall, or the side of a wall. Drag a placed piece to move it.`
-    : `Build · ${S.piece.label}: click the ground or anything you've built. Drag to paint a row; build on top of walls to go up a floor.`,
-  select: () => 'Select: click a piece (Shift adds more), or click and drag a box round as much as you want, even the whole build. Drag a selected turret to move it. Ctrl+A selects everything.',
+    ? `Build · ${S.piece.label}: click a floor, or the top or side of a wall. Drag a placed piece to move it.`
+    : `Build · ${S.piece.label}: click to place, drag to paint a row. Build on top of walls to go up a floor.`,
+  select: () => 'Select: click a piece (Shift adds more) or drag a box round them. Drag a selected turret to move it. Ctrl+A selects all.',
   delete: () => 'Delete: click a piece, or drag across several. Ctrl+Z brings them back.',
   camera: () => 'Camera: drag to turn, Shift-drag to pan, scroll or pinch to zoom.',
 };
@@ -4261,7 +4261,7 @@ function updateSelCard(){
   $('selText').textContent = text;
   const mine = [...UI.sel].filter(sk => !sk.startsWith('i:')).length;
   const old = [...UI.sel].some(sk => sk.startsWith('i:'));
-  $('selHint').textContent = old ? 'Imported before pieces could move: unlock them to move, turn or copy them.' : n === 1 && S.sel != null ? 'Fine-tune it in the Selected piece panel.' : '';
+  $('selHint').textContent = old ? 'Old import: make it movable to edit it.' : n === 1 && S.sel != null ? 'Fine-tune it in the Selected piece panel.' : '';
   $('selTools').hidden = !mine; $('selRepRow').hidden = !mine; $('selUnlockRow').hidden = !old;
   $('fillRow').hidden = ![...UI.sel].some(sk => sk.startsWith('e:'));
   if(WALK.on) card.hidden = true;
@@ -4349,8 +4349,8 @@ function supported(mode, floor, key, type){
 }
 const NO_SUPPORT = t => t.mode === 'cell'
   ? 'Nothing to hold it up: a ceiling needs a wall or flat pillar under it, or a ceiling next to it.'
-  : S.piece.id === 'beam' ? 'Nothing to hold it up: a flat pillar needs to lie on a wall or doorframe, have an end on one, or join one that does.'
-  : 'Nothing to hold it up: build it on a foundation, ceiling, wall or flat pillar, or under a flat pillar.';
+  : S.piece.id === 'beam' ? 'Nothing to hold it up: a flat pillar must rest on a wall or doorframe, or join a pillar that does.'
+  : 'Nothing to hold it up: build it on a floor, wall or flat pillar.';
 
 function lvlIndex(f){ return f.lvl === 'roof' ? S.stories : f.lvl; }
 function down3D(e, again){
@@ -4641,7 +4641,7 @@ function bind3D(cv){
         for(const sk of boxPick(box)) pick.add(sk);
         setSelection([...pick]);
         const n = pick.size;
-        if(n) flashHint(`${n} piece${n === 1 ? '' : 's'} selected.${n > 1 ? ' Drag again with Shift held to add more.' : ''}`);
+        if(n) flashHint(`${n} piece${n === 1 ? '' : 's'} selected.${n > 1 ? ' Shift-drag to add more.' : ''}`);
       } else if(box.live){ /* cancelled: keep the selection as it was */ }
       else if(h && h.o.sk){                                              // a click: pick that piece (Shift adds or removes it)
         if(box.add){ const s = new Set(UI.sel); s.has(h.o.sk) ? s.delete(h.o.sk) : s.add(h.o.sk); setSelection([...s]); }
@@ -4749,7 +4749,7 @@ window.addEventListener('keydown', e => {
   const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
   if(mod && k === 'z'){ e.preventDefault(); return e.shiftKey ? redo() : undo(); }
   if(mod && k === 'y'){ e.preventDefault(); return redo(); }
-  if(mod && k === 'c' && UI.sel.size){ e.preventDefault(); copySelection(); if(mySel().length) copySelectionCode().then(ok => { if(ok) flashHint(`Copied ${CLIP.items.length} ${CLIP.items.length === 1 ? 'piece' : 'pieces'}: Ctrl+V pastes them here, and the Template Hammer code for just this part is on your clipboard.`); }); return; }
+  if(mod && k === 'c' && UI.sel.size){ e.preventDefault(); copySelection(); if(mySel().length) copySelectionCode().then(ok => { if(ok) flashHint(`Copied ${CLIP.items.length} ${CLIP.items.length === 1 ? 'piece' : 'pieces'}. Ctrl+V pastes them here; the template code is on your clipboard too.`); }); return; }
   if(mod && k === 'v' && V3.ok){ clearTimeout(CLIP.wait); CLIP.wait = setTimeout(() => { CLIP.wait = 0; startPaste(); }, 150); return; }   // the paste event below usually comes first
   if(mod && k === 'd' && UI.sel.size && V3.on){ e.preventDefault(); copySelection(); return startPaste(); }
   if(mod && k === 'a' && V3.on){ e.preventDefault(); setMode('select'); return selectAllVisible(); }
@@ -4896,7 +4896,7 @@ function placeItems(items, dFloor){
   return sks;
 }
 function mySel(){ return [...UI.sel].filter(sk => !sk.startsWith('i:')); }
-const OLD_IMPORT_MSG = 'These were imported before pieces could move. Click “Make imported pieces movable” first.';
+const OLD_IMPORT_MSG = 'This is an old import. Click “Make imported pieces movable” first.';
 function transformSelection(op){
   const sks = mySel();
   if(!sks.length){ if(UI.sel.size) flashHint(OLD_IMPORT_MSG); return; }
@@ -5058,14 +5058,14 @@ function pasteAt(e){
   endPaste(true);
   const back = () => { if(tool !== 'build') setMode(tool); baseStatus(); };
   if(mode === 'move' && piecesSig(move) !== was){                         // the lifted pieces changed while you held them
-    back(); return flashHint('Those pieces changed while you were holding them, so nothing moved. Select them and move them again.');
+    back(); return flashHint('Those pieces changed while you held them, so nothing moved. Try again.');
   }
   if(mode === 'move') removeSks(move);                                   // a move takes them from where they were
   const baked = mode === 'import' && bakeRoof();
   const placed = placeItems(items, 0);
   if(!placed){
     undoQuiet(had); back();
-    if(mode === 'import') $('impNote').textContent = 'It didn’t fit there, so nothing was added. Click Add to my build to try again.';
+    if(mode === 'import') $('impNote').textContent = 'It didn’t fit there. Click Add to my build to try again.';
     return;
   }
   if(keep){ S.stories = Math.max(1, keep.stories + at.F - keep.lo); S.minFloors = Math.min(S.minFloors || 1, S.stories); ensureStories(); $('stories').value = String(S.stories); }
@@ -5075,7 +5075,7 @@ function pasteAt(e){
     + (rep ? ` ${rep} ${rep === 1 ? 'spot' : 'spots'} already had a piece, which ${rep === 1 ? 'was swapped for the new one' : 'were swapped for the new ones'}.` : '');
   if(mode === 'move') flashHint(`Moved ${what}. ${keys}`);
   else if(mode === 'import'){
-    flashHint(`Added the import: ${what}, ${one ? 'selected' : 'all selected'}. ${keys}${baked ? ' Your roof is now real ceilings (Roof over top floor is off), so the roofs don’t double up.' : ''}`);
+    flashHint(`Added the import: ${what}, ${one ? 'selected' : 'all selected'}. ${keys}${baked ? ' Your roof is now real ceilings, and Roof over top floor is off.' : ''}`);
     $('impNote').textContent = `Added ${what} to your build. ${one ? 'It’s' : 'They’re'} selected: ${keys}`;
   }
   else flashHint(`Pasted ${what}. ${one ? 'It’s' : 'They’re'} selected, so you can turn, move or repeat ${them}.`
@@ -5122,7 +5122,7 @@ function wholeBuild(op){
   const done = histState().json !== before;
   if(done){ if(S.stories !== stories){ S.stories = stories; ensureStories(); $('stories').value = String(stories); } setSelection(mySel().filter(sk => skExists(sk) && shown(sk))); render(); }
   else { setSelection(had.filter(sk => skExists(sk) && shown(sk))); render(); }
-  if(done) flashHint(`${op === 'rot' ? 'Turned the whole build 90°' : 'Mirrored the whole build'}${hid ? ', hidden floors and roof pieces included' : ''}.`
+  if(done) flashHint(`${op === 'rot' ? 'Turned the whole build 90°' : 'Mirrored the whole build'}${hid ? ', hidden pieces too' : ''}.`
     + (S.imp ? ' The old import stays put until you make it movable (Create tab).' : ''));
 }
 
@@ -5159,7 +5159,7 @@ function turretFill(){
   render();
   const why = [skipped && `${skipped} already had one`, covered && `${covered} had a wall or ceiling on top`].filter(Boolean).join(', ');
   flashHint(added ? `Added ${added} ${added === 1 ? 'piece' : 'pieces'}${why ? ` (skipped: ${why})` : ''}.`
-    : covered && where === 'top' ? 'Those tops are covered by a wall or ceiling above. Put turrets on the ceiling or roof instead, or hang them on the side.'
+    : covered && where === 'top' ? 'Those tops are covered from above. Put turrets on the ceiling or roof, or hang them on the side.'
     : 'No free spots: select walls or doorframes that don’t have turrets yet.');
 }
 // select everything on one floor (double-click in Select), or everything you can see (Ctrl+A)
@@ -5368,7 +5368,7 @@ function renderCounts(groups){
   if(UI.hlPin && !groups.some(g => g.id === UI.hlPin)) UI.hlPin = null;
   const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const chip = g => `<button type="button" class="cnt" data-g="${esc(g.id)}" aria-pressed="false" `
-    + `title="Hover to see them in 3D. Click to select them all; Shift-click adds them to what's selected."><i class="sw" style="background:${groupSwatch(g.id)}"></i>${esc(g.label)} <b>${g.n}</b></button>`;
+    + `title="Hover to light them up. Click to select them, Shift-click to add more."><i class="sw" style="background:${groupSwatch(g.id)}"></i>${esc(g.label)} <b>${g.n}</b></button>`;
   const cats = [...new Set(groups.map(g => g.cat))];
   const html = cats.map(c => `<div class="cntCat" data-cat="${c}"><div class="cntHead">${c}</div><div class="cntRow">${groups.filter(g => g.cat === c).map(chip).join('')}</div></div>`).join('');
   const empty = '<span class="note">Nothing built yet.</span>';
@@ -5435,7 +5435,7 @@ for(const id of ['counts', 'pieceList', 'checkOut', 'cmpOut']){
     if(!sks.length){
       UI.hlPin = UI.hlPin === g ? null : g;
       renderCounts.last = null; applyGroupHL(); groupStatus(); syncGroupPressed();
-      if(UI.hlPin) flashHint(`The ${label} are added automatically, so they can’t be selected on their own: they come along when you select or copy what they belong to. They stay lit until you click again.`);
+      if(UI.hlPin) flashHint(`The ${label} are added for you, so they can’t be selected on their own. Click again to stop the highlight.`);
       return;
     }
     const add = e.shiftKey || e.ctrlKey || e.metaKey, have = new Set(sks), allIn = sks.every(sk => UI.sel.has(sk));
@@ -5448,7 +5448,7 @@ for(const id of ['counts', 'pieceList', 'checkOut', 'cmpOut']){
     const hidden = entries3D().filter(x => x.sk && have.has(x.sk) && !visible3D(x)).length;
     flashHint((add ? (allIn ? `Took the ${label} out of the selection. ` : `Added the ${label}: `) : `Selected the ${label}: `)
       + (allIn && add ? `${next.length} ${next.length === 1 ? 'piece' : 'pieces'} still selected.` : `${next.length} ${next.length === 1 ? 'piece' : 'pieces'} selected`
-        + (hidden ? ` (${hidden} on floors hidden by the Show slider)` : '') + `. Copy code, Move, Turn or Delete them from the card, or Shift-click another row to add it.`));
+        + (hidden ? ` (${hidden} on hidden floors)` : '') + `.`));
     if(id === 'counts') $('view3d').scrollIntoView({block:'nearest', behavior:'smooth'});
   });
 }
@@ -5579,7 +5579,7 @@ function renderHotbar(){
 function useSlot(i){
   const sl = HB[i], p = pieceOf(sl);
   closeHbMenu();
-  if(!p){ flashHint(`Slot ${(i + 1) % 10} is empty. Click Edit on the hotbar to put a piece there.`); return; }
+  if(!p){ flashHint(`Slot ${(i + 1) % 10} is empty. Click Edit to fill it.`); return; }
   S.cat = sl.cat; S.piece = p; S.sel = null;
   if(p.path || (sl.cat === 'custom' && sl.path)){                         // a piece with its own path (Stone, Tek, ... or the custom list)
     S.customPath = p.path || sl.path;
@@ -5612,7 +5612,7 @@ $('hbSlots').addEventListener('click', e => {
 $('hbSlots').addEventListener('contextmenu', e => { const b = e.target.closest('.hbSlot'); if(!b) return; e.preventDefault(); openHbMenu(+b.dataset.slot); });
 $('hbEdit').onclick = () => {
   HB_EDIT = !HB_EDIT; if(!HB_EDIT) closeHbMenu(); renderHotbar();
-  if(HB_EDIT) flashHint('Click a hotbar slot to choose what goes on it. Click Done when you’re finished.');
+  if(HB_EDIT) flashHint('Click a slot to choose its piece, then click Done.');
   $('hbEdit').textContent = HB_EDIT ? 'Done' : 'Edit';
 };
 $('hbMenu').addEventListener('click', e => {
@@ -5685,7 +5685,7 @@ $('wideBtn').onclick = () => { setWide($('wideBtn').getAttribute('aria-pressed')
 $('fullBtn').onclick = () => {
   if(document.fullscreenElement) return document.exitFullscreen();
   const el = $('view3d'), go = el.requestFullscreen || el.webkitRequestFullscreen;
-  const no = () => flashHint('Full screen isn’t allowed here. Use Wide view, or drag the bar under the 3D view to make it taller.');
+  const no = () => flashHint('Full screen isn’t allowed here. Try Wide view.');
   try { if(!go) throw 0; const pr = go.call(el); if(pr && pr.catch) pr.catch(no); } catch(_) { no(); }
 };
 document.addEventListener('fullscreenchange', () => { $('fullBtn').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
@@ -5952,7 +5952,7 @@ function learnFromExport(text){
   if($('learnUse')) $('learnUse').onclick = () => {
     Object.assign(CAL, LEARNT.got);
     try { localStorage.setItem('asa-base-planner:cal', JSON.stringify(CAL)); } catch(_) {}
-    render(); flashHint('Using the positions from your export for every piece like it.');
+    render(); flashHint('Now using the positions from your export.');
     $('learnUse').textContent = 'In use';
   };
   if($('learnAdd')) $('learnAdd').onclick = () => {
@@ -6028,10 +6028,10 @@ function coverage(){
     const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat); tex.needsUpdate = true; tex.magFilter = THREE.NearestFilter;
     COV_MESH = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
     COV_MESH.position.set((x0 + x1)/2, -(y0 + y1)/2, -8); SCENE.add(COV_MESH); frame3D();
-    $('covOut').innerHTML = `<p>Within 15 m of the walls, the weakest spot is hit by <b>${weakNear === Infinity ? 0 : weakNear}</b> ${weakNear === 1 ? 'turret' : 'turrets'}.`
-      + ` Across the whole coloured area, the weakest spot gets <b>${weakest}</b>.</p>`
+    $('covOut').innerHTML = `<p>Weakest spot within 15 m of the walls: <b>${weakNear === Infinity ? 0 : weakNear}</b> ${weakNear === 1 ? 'turret' : 'turrets'}.`
+      + ` Whole coloured area: <b>${weakest}</b>.</p>`
       + `<div class="covKey"><span style="--c:#e6372d">none</span><span style="--c:#f08c28">1\u20132</span><span style="--c:#f0cd3c">3\u20135</span><span style="--c:#96cd5a">6\u201315</span><span style="--c:#3caa5a">16+</span></div>`
-      + `<p class="note">Turrets counted within range and line of sight, at chest height on the ground. Sideways turrets only count in front of their wall.</p>`;
+      + `<p class="note">Counts turrets in range with a clear shot.</p>`;
   };
   requestAnimationFrame(step);
 }
@@ -6077,7 +6077,7 @@ function renderMaterials(){
   const html = `<div class="matTotals">${totals || '<span>Fill in costs below to see totals.</span>'}</div>`
     + (blank.length ? `<p class="note matMissing">Not counted yet (no listed cost): ${blank.join(', ')}. Add them under Cost per piece.</p>` : '')
     + `<details><summary>Cost per piece</summary><div class="matWrap"><table class="matTable"><tr><th>Piece</th><th>#</th>${cols.map(([, l]) => `<th>${l}</th>`).join('')}</tr>${rows.join('')}</table></div>`
-    + `<p class="note">Grey numbers are the crafting costs listed on the ARK wiki and wikily for ARK: Survival Ascended; italic ones are assumed (hover the \u24d8 for why). Heavy turrets include the Auto Turret they\u2019re crafted from. If your server changes recipes, type your own numbers over them: they\u2019re remembered.</p></details>`;
+    + `<p class="note">Grey numbers are wiki costs, italic ones are guesses (hover the \u24d8 for why). Type your own over them and they\u2019re saved.</p></details>`;
   const open = $('materials').querySelector('details') && $('materials').querySelector('details').open;
   $('materials').innerHTML = html;
   if(open) $('materials').querySelector('details').open = true;
@@ -6122,8 +6122,8 @@ $('genBtn').onclick = () => {
 
 
 /* ---- sideways turrets on double doorframes: posts or thatch ---- */
-const HANG_NOTES = {post:'Turrets hang on one of the frame\u2019s two posts, so the doorframe holds them: no thatch walls to swap later.',
-  thatch:'Turrets hang in the middle of the opening. The template puts a thatch wall behind each one so it can place; swap those for doorframes once the turrets are up.'};
+const HANG_NOTES = {post:'Turrets hang on the doorframe posts: no thatch walls to swap later.',
+  thatch:'Turrets hang in the middle, with a thatch wall behind each. Swap those for doorframes once the turrets are up.'};
 function showHang(){ $('hangMode').value = HANG_MODE; $('genHang').value = HANG_MODE; $('hangNote').textContent = HANG_NOTES[HANG_MODE]; }
 // move every sideways turret already on a double doorframe (with or without its doors) to the other way of hanging
 function switchHangs(mode){
@@ -6143,7 +6143,7 @@ function switchHangs(mode){
 }
 $('hangMode').onchange = e => {
   HANG_MODE = e.target.value; try { localStorage.setItem('asa-base-planner:hang', HANG_MODE); } catch(_) {}
-  showHang(); flashHint('New sideways turrets on double doorframes will ' + (HANG_MODE === 'post' ? 'go on the posts.' : 'be centred with a thatch wall behind.') + ' Use "Switch the ones already placed" to change existing ones.');
+  showHang(); flashHint('New sideways turrets on double doorframes will ' + (HANG_MODE === 'post' ? 'go on the posts.' : 'be centred with a thatch wall behind.') + ' Use "Switch placed turrets" to change existing ones.');
 };
 $('hangSwitch').onclick = () => {
   const n = switchHangs(HANG_MODE); render();
@@ -6352,7 +6352,7 @@ function snapCycle(dir){
 function snapTurn(){
   SNAP.rot = (SNAP.rot + 90) % 360;
   if(WALK.on) walkAim(); else if(SNAP.lastEv) ghostAt(SNAP.lastEv);
-  flashHint(`Turned ${SNAP.rot}\u00b0 (E again to keep turning). Pieces hanging on a wall always face away from it.`);
+  flashHint(`Turned ${SNAP.rot}\u00b0. Pieces on a wall always face out.`);
 }
 $('snapOn').checked = SNAP_ON;
 $('snapOn').onchange = e => { SNAP_ON = e.target.checked; try { localStorage.setItem('asa-base-planner:snap', SNAP_ON ? '1' : '0'); } catch(_) {} SNAP.list = []; drawSnapDots(); frame3D(); };
@@ -6851,7 +6851,7 @@ border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
 @media (max-width:768px){#mobile-notice{display:block}}
 </style>
 <div id="mobile-notice" role="status">
-  <strong>Best on a computer:</strong> ASA Base Planner is a 3D building tool designed for desktop with a mouse and keyboard. You can look around on your phone, but for the full experience, open it on a computer.
+  <strong>Best on a computer.</strong> You can look around on a phone, but building needs a mouse and keyboard.
   <button type="button" aria-label="Close notice" onclick="this.parentNode.style.display='none'">&times;</button>
 </div>
 </body>
