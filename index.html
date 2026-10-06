@@ -975,6 +975,44 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
   #view3d.walking .hbMenu{max-height:calc(100% - 170px)}
   table.keys td{padding:8px 10px}
 }
+/* hover help: a short "what to do" and a looping clip of it */
+.hcard{position:fixed;z-index:60;top:0;left:0;width:300px;max-width:calc(100vw - 24px);padding:10px;color:var(--ov-ink);background:var(--ov);
+  border:1px solid var(--ov-line);border-radius:var(--r-lg);box-shadow:var(--ov-shadow);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s}
+.hcard.on{opacity:1;transform:none}
+.hcHead{display:flex;align-items:center;gap:8px}
+.hcHead b{font-size:13px;font-weight:600;letter-spacing:-.005em}
+.hcHead kbd{margin-left:auto;color:var(--ov-ink);background:var(--ov-hover);border-color:var(--ov-line);box-shadow:none}
+.hcDo{margin:3px 0 0;font-size:12px;line-height:1.45;color:var(--ov-mute)}
+.hcMedia{margin-top:9px;aspect-ratio:8/5;max-width:100%;border-radius:var(--r);overflow:hidden;background:var(--nav);border:1px solid var(--ov-line)}
+.hcMedia video,.hcMedia img{display:block;width:100%;height:100%;object-fit:cover}
+@media (prefers-reduced-motion:reduce){ .hcard{transition:none;transform:none} }
+/* first-time tour: a spotlight on one part of the page and a note beside it */
+.tour{position:fixed;inset:0;z-index:80;--scrim:rgba(8,9,12,.6)}
+.tourHole{position:fixed;border-radius:var(--r-lg);box-shadow:0 0 0 200vmax var(--scrim);outline:2px solid var(--ac);outline-offset:3px;
+  transition:top .25s,left .25s,width .25s,height .25s;pointer-events:none}
+.tourHole.none{outline:0}
+.tourTip{position:fixed;width:340px;max-width:calc(100vw - 32px);padding:16px 18px 14px;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 2px 6px rgba(0,0,0,.18),0 16px 40px rgba(0,0,0,.28);transition:top .25s,left .25s}
+.tourTip:focus{outline:none}
+.tourN{display:flex;align-items:center;gap:5px;margin-bottom:10px}
+.tourN i{width:6px;height:6px;border-radius:50%;background:var(--line-2)}
+.tourN i.on{width:16px;border-radius:3px;background:var(--ac)}
+.tourTip h3{margin:0 0 4px;font-size:15px;font-weight:600;text-wrap:balance}
+.tourTip p{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+.tourFoot{display:flex;align-items:center;gap:8px;margin-top:14px}
+.tourFoot #tourSkip{margin-right:auto;border-color:transparent;background:transparent;box-shadow:none;color:var(--muted)}
+.tourFoot #tourSkip:hover{color:var(--ink);background:var(--btn-hover)}
+@media (prefers-reduced-motion:reduce){ .tourHole,.tourTip{transition:none} }
+.linkBtn{padding:0;border:0;background:none;box-shadow:none;font:inherit;color:var(--ac-ink);font-weight:500;cursor:pointer}
+.linkBtn:where(:hover:not(:disabled)){background:none;text-decoration:underline}
+/* guide pictures */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;margin:14px 0 6px}
+figure.shot{margin:0;min-width:0}
+figure.shot img,figure.shot video{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:8/5;object-fit:cover;background:var(--sf3);
+  border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm)}
+figure.shot figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
+figure.shot.wide{margin:14px 0 6px}
 </style>
 </head>
 <body>
@@ -1124,6 +1162,10 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
             <label class="chk"><input type="checkbox" id="msInvOrbit"> Invert up and down when turning the camera</label>
             <label class="chk"><input type="checkbox" id="msInvLook"> Invert up and down when looking around while walking</label>
           </div>
+          <div class="ctrlGroup"><h3>Help</h3>
+            <label class="chk"><input type="checkbox" id="helpCards"> Show a tip and a short clip when you hover a tool</label>
+            <p class="note"><button type="button" class="linkBtn" id="ctrlTour">Take the tour again</button></p>
+          </div>
           <div class="ctrlGroup"><h3>These stay the same</h3>
             <p class="note ctrlFixed"><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> undo and redo · <kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> copy and paste · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>+<kbd>A</kbd> select all · <kbd>Delete</kbd> deletes the selection · <kbd>Esc</kbd> cancels · <kbd>1</kbd>–<kbd>0</kbd> hotbar · arrow keys also walk · right-drag turns the view, middle-drag pans, scroll zooms</p>
           </div>
@@ -1136,7 +1178,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
       <div class="cornerGrip" id="cornerGrip" tabindex="0" role="separator" aria-label="Drag to change the 3D view's height and width together" title="Drag to resize both ways">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14 6L6 14M14 10L10 14"/></svg></div>
       </div>
-      <p class="note" id="legend3d">New here? The <a href="#guide">Guide</a> explains every tool and shortcut. Quick version: pick a piece, click to build; right-drag turns the view, scroll zooms, Ctrl+Z undoes. Press <span data-k="walk">G</span> to walk around and build in first person. Want different keys? Click <b>Controls</b>. Found a bug or have an idea? <a href="#contact">Send feedback</a>.</p>
+      <p class="note" id="legend3d">New here? <button type="button" class="linkBtn" id="legendTour">Take the quick tour</button>, or read the <a href="#guide">Guide</a>, which explains every tool and shortcut. Hover any tool for a short clip of it. Right-drag turns the view, scroll zooms, Ctrl+Z undoes. Press <span data-k="walk">G</span> to walk around and build in first person. Want different keys? Click <b>Controls</b>. Found a bug or have an idea? <a href="#contact">Send feedback</a>.</p>
       <div class="gridbox" id="planView" hidden><svg id="grid" role="img" aria-label="Base grid"></svg></div>
       <p class="note" id="hint"></p>
     </section>
@@ -1367,8 +1409,10 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
 <section class="page doc" id="page-guide" hidden>
   <h1>How to use the planner</h1>
   <p class="lead">Build your base in 3D, then paste the code into ARK's Template Hammer. Your design saves in this browser as you go.</p>
+  <p><button type="button" class="primary" id="guideTour">Take the quick tour</button> <span class="note">Six stops round the planner, about 30 seconds.</span></p>
 
   <h2>Building</h2>
+  <figure class="shot wide"><img src="media/guide-overview.jpg" width="960" height="600" loading="lazy" alt="The planner: piece tabs along the top, the 3D view with the tool bar, and the side panel on the right"><figcaption>Pick a piece in the tabs, build in the 3D view, and find settings and generators in the side panel.</figcaption></figure>
   <ul>
     <li>Pick a piece from the tabs above the 3D view: Structure, Doors, Defense, Utility or Custom.</li>
     <li>Click the ground to lay foundations, and drag to paint a whole row.</li>
@@ -1390,9 +1434,22 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
     <dt><span class="modeTag" style="--m:var(--m-camera)">View size</span></dt><dd>Drag the bar under the 3D view to make it taller or shorter (double-click it to reset). Wide view hides the side panels, Full screen fills your screen, and Faster graphics helps on slower computers.</dd>
     <dt><span class="modeTag" style="--m:var(--m-pieces)">Pieces</span></dt><dd>Totals for everything you've built. Hover one to light those pieces up in orange; click it to select them all (Shift-click adds another row), then copy their code, move, turn or delete them.</dd>
   </dl>
+  <p>Hover any tool in the planner for a tip and a short clip of it. Here are the main ones:</p>
+  <div class="figs">
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/build.jpg" data-src="media/build.mp4" width="480" height="300" aria-label="Clip: placing foundations and walls"></video><figcaption><b>Build</b>: click to place, drag for a row.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/select.jpg" data-src="media/select.mp4" width="480" height="300" aria-label="Clip: dragging a box to select part of a base"></video><figcaption><b>Select</b>: drag a box round what you want.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/delete.jpg" data-src="media/delete.mp4" width="480" height="300" aria-label="Clip: deleting pieces by clicking them"></video><figcaption><b>Delete</b>: click or drag across pieces.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/walk.jpg" data-src="media/walk.mp4" width="480" height="300" aria-label="Clip: walking through a base in first person"></video><figcaption><b>Walk</b>: look round and build from inside.</figcaption></figure>
+  </div>
 
   <h2>Building faster</h2>
   <p>Select some pieces and a card appears with more options:</p>
+  <div class="figs">
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/move.jpg" data-src="media/move.mp4" width="480" height="300" aria-label="Clip: picking up part of a base and dropping it somewhere else"></video><figcaption><b>Move</b>: pick it up, point, click to drop.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/copycode.jpg" data-src="media/copycode.mp4" width="480" height="300" aria-label="Clip: copying the code for just the selected part"></video><figcaption><b>Copy code</b>: the code for just that part.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/repeat.jpg" data-src="media/repeat.mp4" width="480" height="300" aria-label="Clip: stacking copies of a floor on top"></video><figcaption><b>Repeat up</b>: the quick way to a tall tower.</figcaption></figure>
+    <figure class="shot"><video muted loop playsinline preload="none" poster="media/import.jpg" data-src="media/import.mp4" width="480" height="300" aria-label="Clip: adding an imported template onto a build"></video><figcaption><b>Import</b>: drop a template onto your build.</figcaption></figure>
+  </div>
   <ul>
     <li><b>Turn</b> and <b>Mirror</b> flip a section around; turrets keep facing out.</li>
     <li><b>Copy</b> picks the section up so you can drop a copy anywhere else.</li>
@@ -1408,6 +1465,10 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
   </ul>
 
   <h2>Before you place</h2>
+  <div class="figs">
+    <figure class="shot"><img src="media/guide-check.jpg" width="960" height="600" loading="lazy" alt="Check placement marking a piece in red that won't snap in game"><figcaption><b>Check placement</b> marks in red what won’t snap.</figcaption></figure>
+    <figure class="shot"><img src="media/guide-coverage.jpg" width="960" height="600" loading="lazy" alt="Turret coverage colouring the ground round a tower"><figcaption><b>Turret coverage</b>: the more turrets reach a spot, the brighter it gets.</figcaption></figure>
+  </div>
   <ul>
     <li><b>Check placement</b> marks in red every piece that won't snap in game: flat pillars that don't chain back to a pillar lying on a doorframe, railings with nothing under them, turrets hanging in an open doorframe or standing on nothing.</li>
     <li><b>Compare with what placed</b>: after placing, export what got built and paste it in. Missing pieces light up red, extra ones show as blue boxes.</li>
@@ -1417,6 +1478,7 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
   </ul>
 
   <h2>Getting it into ARK</h2>
+  <figure class="shot wide"><img src="media/guide-code.jpg" width="960" height="600" loading="lazy" alt="The Code tab with the template code ready to copy"><figcaption>The Code tab holds the template code. Bigger builds split into parts here.</figcaption></figure>
   <ol class="steps">
     <li>Click <b>Copy template code</b> at the top of the page.</li>
     <li>In game, open the Template Hammer's import and paste the code.</li>
@@ -1548,6 +1610,20 @@ table.keys td:first-child{background:var(--sf2);border-right:1px solid var(--lin
 </section>
 </div>
 
+<div class="hcard" id="hcard" role="tooltip" hidden>
+  <div class="hcHead"><b id="hcT"></b><kbd id="hcK"></kbd></div>
+  <p class="hcDo" id="hcDo"></p>
+  <div class="hcMedia" id="hcMedia"></div>
+</div>
+<div class="tour" id="tour" hidden>
+  <div class="tourHole" id="tourHole"></div>
+  <div class="tourTip" id="tourTip" role="dialog" aria-modal="true" aria-labelledby="tourT" aria-describedby="tourD" tabindex="-1">
+    <div class="tourN" id="tourN" aria-hidden="true"></div>
+    <h3 id="tourT"></h3>
+    <p id="tourD"></p>
+    <div class="tourFoot"><button type="button" id="tourSkip">Skip tour</button><button type="button" id="tourBack">Back</button><button type="button" class="primary" id="tourNext">Next</button></div>
+  </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const MAX_FLOORS = 100;                                                // most floors a design can have
@@ -6285,6 +6361,246 @@ $('ctrlReset').onclick = () => {
   saveControls(); applyKeyLabels(); renderControls(); syncMouseUI(); ctrlMsg('Back to the usual keys and speeds.', true);
 };
 
+/* ================= hover help: hover a tool for what to do and a short clip of it ================= */
+// id: [title, key (a controls id, or the key itself), what to do, clip]. {turn} and the like follow the controls.
+// The clip is media/<id>.mp4 with a still at media/<id>.jpg; a fourth entry names another clip, or 0 for none.
+const HELP = {
+  build:     ['Build', 'build', 'Pick a piece in the tabs above, then click the ground or a wall to place it. Drag to place a whole row.'],
+  select:    ['Select', 'select', 'Click a piece to select it, or click and drag a box round part of the build. Shift-click adds more.'],
+  delete:    ['Delete', 'delete', 'Click a piece to remove it, or hold and drag across a row of them. Ctrl+Z brings them back.'],
+  camera:    ['Camera', 'camera', 'Drag to turn the view. In any tool, right-drag turns it too, scroll zooms and middle-drag pans.'],
+  walk:      ['Walk', 'walk', 'Walk through your base in first person. Click builds at the crosshair, right-click removes, Esc leaves.'],
+  pieces:    ['Pieces', '', 'Totals for everything you’ve built. Hover a row to light those pieces up; click it to select them.'],
+  controls:  ['Controls', '', 'Change any key and the mouse speeds. You can switch these tips off there too.'],
+  undo:      ['Undo', 'Ctrl+Z', 'Takes back your last change.', 0],
+  redo:      ['Redo', 'Ctrl+Y', 'Puts back what you undid.', 0],
+  turn:      ['Turn 90°', 'turn', 'Turns the selection a quarter turn round its middle. Turrets keep facing out.'],
+  mirror:    ['Mirror', 'mirror', 'Flips the selection over, left to right (↔) or front to back (↕).'],
+  copy:      ['Copy', 'Ctrl+D', 'Picks up a copy. Point where it goes and click to drop it; {turn} turns it, Esc cancels.'],
+  move:      ['Move', 'move', 'Picks the selection itself up. Point where it goes and click; {turn} turns it, Esc puts it back.'],
+  copycode:  ['Copy code', 'Ctrl+C', 'Copies the Template Hammer code for just these pieces. In game, paste it into the hammer’s import.'],
+  repeat:    ['Repeat up', '', 'Stacks copies of the selection on top, as many times as the number says. The quick way to a tall tower.'],
+  fill:      ['Turret fill', '', 'Puts turrets on every selected wall. Pick the pattern and where they go, then click.'],
+  seldel:    ['Delete', 'Delete', 'Removes everything you’ve selected. Ctrl+Z brings it back.', 'delete'],
+  clear:     ['Clear', 'Esc', 'Deselects everything.', 0],
+  import:    ['Add to my build', '', 'Paste a Template Hammer export above and click this. Point where it goes and click to drop it; {turn} turns it.'],
+  wholebuild:['Whole build', '', 'Turns, mirrors or moves everything you’ve built at once.'],
+  export:    ['Copy template code', '', 'Copies the code for your whole build. In game, paste it into the Template Hammer’s import.', 'copycode'],
+};
+// [element, help id, where the card goes: 'side' sits beside the selection card instead of over its buttons]
+const HELP_AT = [['[data-mode="build"]', 'build'], ['[data-mode="select"]', 'select'], ['[data-mode="delete"]', 'delete'], ['[data-mode="camera"]', 'camera'],
+  ['#walkBtn', 'walk'], ['#piecesBtn', 'pieces'], ['#ctrlBtn', 'controls'], ['#undoBtn', 'undo'], ['#redoBtn', 'redo'],
+  ['#selRot', 'turn', 'side'], ['#selMirX', 'mirror', 'side'], ['#selMirY', 'mirror', 'side'], ['#selCopy', 'copy', 'side'], ['#selMove', 'move', 'side'],
+  ['#selCode', 'copycode', 'side'], ['#selRepeat', 'repeat', 'side'], ['#selFill', 'fill', 'side'], ['#selDel', 'seldel', 'side'], ['#selNone', 'clear', 'side'],
+  ['#impAdd', 'import'], ['#allRot', 'wholebuild'], ['#allMirX', 'wholebuild'], ['#allMirY', 'wholebuild'], ['#allMove', 'wholebuild'],
+  ['#copySel', 'copycode'], ['#navCopy', 'export']];
+for(const [q, id, side] of HELP_AT) document.querySelectorAll(q).forEach(el => { el.dataset.help = id; if(side) el.dataset.helpSide = side; });
+const HELP_KEY = 'asa-base-planner:helpcards';
+const HC = {on:true, el:null, wait:0, out:0, quiet:null, vids:new Map(), missing:new Set()};
+try { HC.on = localStorage.getItem(HELP_KEY) !== '0'; } catch(_) {}
+const STILL_ONLY = matchMedia('(prefers-reduced-motion: reduce)');
+function helpMedia(m){
+  const box = $('hcMedia');
+  box.replaceChildren();
+  box.hidden = !m || HC.missing.has(m);
+  if(box.hidden) return;
+  let v = HC.vids.get(m);
+  if(!v || (STILL_ONLY.matches ? v.tagName !== 'IMG' : v.tagName !== 'VIDEO')){
+    if(STILL_ONLY.matches){ v = new Image(); v.alt = ''; v.src = `media/${m}.jpg`; }
+    else {
+      v = document.createElement('video');
+      v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
+      v.poster = `media/${m}.jpg`; v.src = `media/${m}.mp4`;
+    }
+    v.addEventListener('error', () => { HC.missing.add(m); HC.vids.delete(m); if(box.contains(v)){ box.hidden = true; helpPlace(); } });
+    HC.vids.set(m, v);
+  }
+  box.append(v);
+  if(v.tagName === 'VIDEO'){ try { v.currentTime = 0; } catch(_) {} const p = v.play(); if(p) p.catch(() => {}); }
+}
+function helpPlace(){
+  const card = $('hcard'), el = HC.el; if(!el || card.hidden) return;
+  const r = el.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight, W = innerWidth, H = innerHeight, gap = 8, m = 8;
+  let x, y;
+  const box = el.dataset.helpSide === 'side' && el.closest('.selcard');
+  const b = box && box.getBoundingClientRect();
+  if(b && b.left - gap - w >= m){ x = b.left - gap - w; y = r.top + r.height / 2 - h / 2; }           // beside the selection card, level with the button
+  else if(b && b.right + gap + w <= W - m){ x = b.right + gap; y = r.top + r.height / 2 - h / 2; }
+  else {
+    x = r.left + r.width / 2 - w / 2;
+    y = r.bottom + gap + h <= H - m || r.top - gap - h < m ? r.bottom + gap : r.top - gap - h;
+  }
+  card.style.left = Math.round(clamp(x, m, Math.max(m, W - w - m))) + 'px';
+  card.style.top = Math.round(clamp(y, m, Math.max(m, H - h - m))) + 'px';
+}
+function helpShow(el){
+  const h = HELP[el.dataset.help]; if(!h || !el.isConnected || !el.getClientRects().length) return;
+  helpHide(true);
+  const n = id => keyName(KEYS[id]);
+  $('hcT').textContent = h[0];
+  const k = h[1] in KEYS ? n(h[1]) : h[1];
+  $('hcK').textContent = k; $('hcK').hidden = !k;
+  $('hcDo').textContent = h[2].replace(/\{(\w+)\}/g, (_, id) => n(id));
+  HC.el = el;
+  if(el.title){ el.dataset.helpTitle = el.title; el.removeAttribute('title'); }   // the card replaces the browser's own tooltip
+  const card = $('hcard');
+  card.hidden = false;
+  helpMedia(h[3] === 0 ? '' : h[3] || el.dataset.help);
+  helpPlace();
+  requestAnimationFrame(() => { if(HC.el === el) card.classList.add('on'); });
+}
+function helpHide(now){
+  clearTimeout(HC.wait); clearTimeout(HC.out);
+  const el = HC.el, card = $('hcard');
+  if(el){ if(el.dataset.helpTitle !== undefined && !el.title) el.title = el.dataset.helpTitle; delete el.dataset.helpTitle; }
+  HC.el = null;
+  card.classList.remove('on'); card.hidden = true;
+  for(const v of $('hcMedia').querySelectorAll('video')) v.pause();
+}
+document.addEventListener('pointerover', e => {
+  if(e.pointerType && e.pointerType !== 'mouse') return;                 // no hover on touch screens
+  const el = e.target.closest && e.target.closest('[data-help]');
+  if(!el){ return; }
+  if(el === HC.el){ clearTimeout(HC.out); return; }
+  if(!HC.on || TOUR.on || WALK.on || CTRL.open || e.buttons || el === HC.quiet) return;
+  clearTimeout(HC.wait); clearTimeout(HC.out);
+  HC.wait = setTimeout(() => helpShow(el), HC.el ? 0 : 450);             // once one is showing, the next one shows straight away
+});
+document.addEventListener('pointerout', e => {
+  const el = e.target.closest && e.target.closest('[data-help]'); if(!el) return;
+  if(e.relatedTarget && el.contains(e.relatedTarget)) return;
+  if(el === HC.quiet) HC.quiet = null;
+  clearTimeout(HC.wait);
+  if(el === HC.el) HC.out = setTimeout(helpHide, 90);
+});
+document.addEventListener('pointerdown', e => {                            // clicking it does the thing; the card gets out of the way
+  const el = e.target.closest && e.target.closest('[data-help]');
+  HC.quiet = el || null;
+  helpHide();
+}, true);
+for(const ev of ['wheel', 'keydown', 'resize']) window.addEventListener(ev, () => { if(HC.el || HC.wait) helpHide(); }, true);
+window.addEventListener('blur', () => helpHide());                          // you switched to another window
+window.addEventListener('scroll', () => { if(HC.el) helpHide(); }, true);
+$('helpCards').checked = HC.on;
+$('helpCards').onchange = e => { HC.on = e.target.checked; if(!HC.on) helpHide(); try { localStorage.setItem(HELP_KEY, HC.on ? '1' : '0'); } catch(_) {} };
+
+// the Guide's pictures: clips load and play only while you can see them; a missing picture hides its figure
+{ const figs = document.querySelectorAll('figure.shot');
+  for(const f of figs){ const m = f.querySelector('img'); if(m) m.addEventListener('error', () => { f.hidden = true; }); }
+  const vids = [...document.querySelectorAll('figure.shot video[data-src]')];
+  const play = v => { if(STILL_ONLY.matches) return; if(!v.src) v.src = v.dataset.src; const p = v.play(); if(p) p.catch(() => {}); };
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(es => { for(const e of es) e.isIntersecting ? play(e.target) : e.target.pause(); }, {threshold:.35});
+    vids.forEach(v => io.observe(v));
+  } else vids.forEach(play);
+  // a figure whose clip can't load still shows its still
+  vids.forEach(v => v.addEventListener('error', () => { const img = new Image(); img.src = v.poster; img.alt = v.getAttribute('aria-label') || ''; img.width = 480; img.height = 300;
+    img.onerror = () => { v.closest('figure').hidden = true; }; v.replaceWith(img); }));
+}
+
+/* ================= first-time tour: a spotlight on each part of the planner ================= */
+const TOUR_KEY = 'asa-base-planner:tour';
+const TOUR_STEPS = [
+  {t:'Welcome to ASA Base Planner', d:'Plan a base in 3D here, then paste it into ARK with the Template Hammer. Six quick stops show you around.'},
+  {at:['#cats', '#pieces'], t:'Pick a piece', d:'Choose a tab, then a piece. Structure has foundations, walls and ceilings; Defense has the turrets.'},
+  {at:['#view3d'], t:'Build in 3D', d:'Click the ground to lay foundations, and drag for a whole row. Click near a foundation’s edge for a wall. Right-drag turns the view, scroll zooms.'},
+  {at:['.tools3d'], t:'Your tools', d:'Build, Select, Delete, Camera and Walk. Hover any of them for a short clip of what it does.'},
+  {at:['.tools3d [data-mode="select"]'], t:'Select, move and copy', d:'In Select, drag a box round part of your build. A card shows up to turn it, move it, copy it, or copy the code for just that part.'},
+  {at:['.sideTabs'], t:'More in the side panel', d:'Build has the settings and whole-build tools, Create has the generators and import, and Check marks pieces that won’t place in game.'},
+  {at:['#navCopy'], t:'Into ARK', d:'When it’s ready, click Copy template code and paste it into the Template Hammer’s import in game. Ready-made bases are under Examples.'},
+];
+const TOUR = {on:false, i:0, back:null};
+function tourRect(step){
+  let r = null;
+  for(const q of step.at || []) for(const el of document.querySelectorAll(q)){
+    const b = el.getBoundingClientRect(); if(!b.width || !b.height) continue;
+    r = r ? {l:Math.min(r.l, b.left), t:Math.min(r.t, b.top), r:Math.max(r.r, b.right), b:Math.max(r.b, b.bottom)} : {l:b.left, t:b.top, r:b.right, b:b.bottom};
+  }
+  return r;
+}
+function tourPlace(){
+  if(!TOUR.on) return;
+  const step = TOUR_STEPS[TOUR.i], hole = $('tourHole'), tip = $('tourTip'), W = innerWidth, H = innerHeight, m = 16, gap = 14, pad = 6;
+  const r = tourRect(step), w = tip.offsetWidth, h = tip.offsetHeight;
+  hole.classList.toggle('none', !r);
+  if(!r){
+    Object.assign(hole.style, {left:W / 2 + 'px', top:H / 2 + 'px', width:'0px', height:'0px'});
+    tip.style.left = Math.round((W - w) / 2) + 'px'; tip.style.top = Math.round(Math.max(m, (H - h) / 2)) + 'px';
+    return;
+  }
+  const L = Math.max(4, r.l - pad), T = Math.max(4, r.t - pad), R = Math.min(W - 4, r.r + pad), B = Math.min(H - 4, r.b + pad);
+  Object.assign(hole.style, {left:L + 'px', top:T + 'px', width:Math.max(0, R - L) + 'px', height:Math.max(0, B - T) + 'px'});
+  let x, y;
+  if(B + gap + h <= H - m){ y = B + gap; x = (L + R) / 2 - w / 2; }                    // below
+  else if(T - gap - h >= m){ y = T - gap - h; x = (L + R) / 2 - w / 2; }               // above
+  else if(R + gap + w <= W - m){ x = R + gap; y = (T + B) / 2 - h / 2; }               // right
+  else if(L - gap - w >= m){ x = L - gap - w; y = (T + B) / 2 - h / 2; }               // left
+  else { x = (L + R) / 2 - w / 2; y = B - h - gap; }                                   // over it, near the bottom
+  tip.style.left = Math.round(clamp(x, m, Math.max(m, W - w - m))) + 'px';
+  tip.style.top = Math.round(clamp(y, m, Math.max(m, H - h - m))) + 'px';
+}
+function tourGo(i){
+  TOUR.i = clamp(i, 0, TOUR_STEPS.length - 1);
+  const step = TOUR_STEPS[TOUR.i], last = TOUR.i === TOUR_STEPS.length - 1;
+  $('tourT').textContent = step.t; $('tourD').textContent = step.d;
+  $('tourN').innerHTML = TOUR_STEPS.map((_, j) => `<i${j === TOUR.i ? ' class="on"' : ''}></i>`).join('');
+  $('tourBack').hidden = TOUR.i === 0;
+  $('tourNext').textContent = TOUR.i === 0 ? 'Show me' : last ? 'Done' : 'Next';
+  $('tourSkip').hidden = last;
+  $('tourTip').setAttribute('aria-label', `${step.t}, step ${TOUR.i + 1} of ${TOUR_STEPS.length}`);
+  const first = step.at && document.querySelector(step.at[0]);
+  if(first && first.getClientRects().length) first.scrollIntoView({block:'nearest', inline:'nearest'});
+  tourPlace();
+  requestAnimationFrame(tourPlace);
+  $('tourNext').focus({preventScroll:true});
+}
+function startTour(){
+  if(TOUR.on) return tourGo(0);
+  if(WALK.on) stopWalk();
+  if(CTRL.open) closeControls();
+  if(PASTE.on) endPaste(false);
+  helpHide();
+  TOUR.on = true; TOUR.back = document.activeElement;
+  $('tour').hidden = false;
+  tourGo(0);
+}
+function endTour(){
+  if(!TOUR.on) return;
+  TOUR.on = false; $('tour').hidden = true;
+  try { localStorage.setItem(TOUR_KEY, 'done'); } catch(_) {}
+  const back = TOUR.back; TOUR.back = null;
+  if(back && back.isConnected && back !== document.body) back.focus({preventScroll:true});
+}
+$('tourNext').onclick = () => TOUR.i === TOUR_STEPS.length - 1 ? endTour() : tourGo(TOUR.i + 1);
+$('tourBack').onclick = () => tourGo(TOUR.i - 1);
+$('tourSkip').onclick = endTour;
+document.addEventListener('keydown', e => {                               // while the tour is up, the planner's keys wait
+  if(!TOUR.on) return;
+  e.stopPropagation();
+  if(e.key === 'Escape'){ e.preventDefault(); endTour(); }
+  else if(e.key === 'ArrowRight'){ e.preventDefault(); $('tourNext').click(); }
+  else if(e.key === 'ArrowLeft'){ e.preventDefault(); if(TOUR.i) tourGo(TOUR.i - 1); }
+  else if(e.key === 'Tab'){                                                // keep focus on the tour's buttons
+    const btns = [...$('tourTip').querySelectorAll('button')].filter(b => !b.hidden);
+    const at = btns.indexOf(document.activeElement);
+    e.preventDefault(); btns[(at + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+  }
+}, true);
+$('tour').addEventListener('wheel', e => e.preventDefault(), {passive:false});
+window.addEventListener('resize', () => { if(TOUR.on) tourPlace(); });
+window.addEventListener('scroll', () => { if(TOUR.on) tourPlace(); }, true);
+const tourFromElsewhere = () => { if(location.hash !== '#planner'){ location.hash = '#planner'; setTimeout(startTour, 120); } else startTour(); };
+$('legendTour').onclick = startTour;
+$('guideTour').onclick = tourFromElsewhere;
+$('ctrlTour').onclick = () => { closeControls(); setTimeout(startTour, 0); };
+// first visit: once, on a computer, when there's no design of yours saved yet
+function maybeTour(){
+  let seen = null; try { seen = localStorage.getItem(TOUR_KEY); } catch(_) { seen = 'done'; }
+  if(seen || TOUR.on || PAGE !== 'planner' || matchMedia('(max-width: 768px), (pointer: coarse)').matches) return;
+  setTimeout(() => { if(!TOUR.on && PAGE === 'planner' && !CTRL.open && !WALK.on && !document.querySelector('dialog[open]')) startTour(); }, 700);
+}
+
 /* ================= contact ================= */
 // Fill these in when you have them: they show under the form as other ways to get in touch.
 // web3formsKey: a Web3Forms access key sends each message straight to the email above (free). Without one, messages go to
@@ -6328,6 +6644,9 @@ render();
 if(restored) flashHint('Picked up where you left off. "Clear all" starts a fresh design.');
 let savedView = '3d'; try { savedView = localStorage.getItem('asa-base-planner:view') || '3d'; } catch(e) {}
 setView(savedView);
+if(!restored) maybeTour();
+else try { if(!localStorage.getItem(TOUR_KEY)) localStorage.setItem(TOUR_KEY, 'done'); } catch(_) {}   // you've used it before
+window.addEventListener('hashchange', () => { if(!restored) maybeTour(); });
 </script>
 <footer class="siteFoot">Fan-made tool for ARK: Survival Ascended, not affiliated with Studio Wildcard. <a href="#guide">Guide</a> · <a href="#about">About</a> · <a href="#contact">Contact</a></footer>
 
