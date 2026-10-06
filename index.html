@@ -1275,6 +1275,7 @@ figure.shot.wide{margin:14px 0 6px}
           <label for="p_cstek">Tek turret (CS)</label><input type="text" id="p_cstek">
           <label for="p_beam">Beam (flat thin pillar)</label><input type="text" id="p_beam">
           <label for="p_post">Pillar (thin)</label><input type="text" id="p_post">
+          <label for="p_pillar" id="p_pillarLabel">Pillar to the ground</label><input type="text" id="p_pillar">
           <label for="p_flyer">Bladewasp hive</label><input type="text" id="p_flyer">
           <label for="p_tesla">Tesla coil</label><input type="text" id="p_tesla">
           <label for="p_gen">Tek generator</label><input type="text" id="p_gen">
@@ -1647,7 +1648,7 @@ figure.shot.wide{margin:14px 0 6px}
 <script>
 const MAX_FLOORS = 100;                                                // most floors a design can have
 // Where pieces sit relative to what they're on. Defaults from real exports; "Learn from your exports" can change them.
-const CAL_DEFAULT = {surfaceLift:10, beamLift:7.5, wallTopLift:0, faceOut:10, faceUp:0, postAlong:127.5};
+const CAL_DEFAULT = {surfaceLift:10, beamLift:7.5, wallTopLift:0, faceOut:10, faceUp:0, postAlong:127.5, pillarUnder:-200, pillarStep:300};
 const CAL = {...CAL_DEFAULT};
 // Sideways turrets on double doorframes: free-placed on one of the frame's posts ('post'), or centred in the opening
 // with a thatch wall behind them to hold them while they place, swapped for the doorframe afterwards ('thatch').
@@ -1678,6 +1679,7 @@ const MATS = {
   metal:{tested:true,
     beam:'/Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Metal.Pillar_Flat_Thin_Metal_C',
     post:'/Game/PrimalEarth/Structures/Tileset/Pillars/Thin/Pillar_Thin_Metal.Pillar_Thin_Metal_C',
+    pillar:'/Game/PrimalEarth/Structures/Metal/Pillar_Metal.Pillar_Metal_C',                // not yet seen in an export
     floor:'/Game/PrimalEarth/Structures/Metal/Floor_Metal.Floor_Metal_C',
     wall:'/Game/PrimalEarth/Structures/Metal/Wall_Metal.Wall_Metal_C',
     ceil:'/Game/PrimalEarth/Structures/Metal/Ceiling_Metal.Ceiling_Metal_C',
@@ -1687,6 +1689,7 @@ const MATS = {
   stone:{tested:false,
     beam:'/Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Stone.Pillar_Flat_Thin_Stone_C',
     post:'/Game/PrimalEarth/Structures/Tileset/Pillars/Thin/Pillar_Thin_Stone.Pillar_Thin_Stone_C',
+    pillar:'/Game/PrimalEarth/Structures/Stone/Stone_Pillar/Pillar_Stone.Pillar_Stone_C',     // from a real export
     floor:'/Game/PrimalEarth/Structures/Stone/Stone_Floor/Floor_Stone.Floor_Stone_C',       // foundation, wall, ceiling, double
     wall:'/Game/PrimalEarth/Structures/Stone/Stone_Wall/Wall_Stone.Wall_Stone_C',           // doorframe and double door: confirmed
     ceil:'/Game/PrimalEarth/Structures/Stone/Stone_Ceiling/Ceiling_Stone.Ceiling_Stone_C',  // from real exports
@@ -1696,6 +1699,7 @@ const MATS = {
   wood:{tested:false,
     beam:'/Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Wood.Pillar_Flat_Thin_Wood_C',
     post:'/Game/PrimalEarth/Structures/Tileset/Pillars/Thin/Pillar_Thin_Wood.Pillar_Thin_Wood_C',
+    pillar:'/Game/PrimalEarth/Structures/Wooden/Pillar_Wood.Pillar_Wood_C',                 // not yet seen in an export
     floor:'/Game/PrimalEarth/Structures/Wooden/Floor_Wood.Floor_Wood_C',
     wall:'/Game/PrimalEarth/Structures/Wooden/Wall_Wood.Wall_Wood_C',
     ceil:'/Game/PrimalEarth/Structures/Wooden/Ceiling_Wood.Ceiling_Wood_C',
@@ -1774,13 +1778,13 @@ const CATS = {
     {id:'custom', label:'Any piece', type:'place', sw:'custom', round:true}]
 };
 const LETTER = {heavy:'H', tek:'T', csheavy:'H', cstek:'T', gen:'G', flyer:'B', custom:'P', tesla:'C', vault:'V'};
-const PATH_KEYS = ['floor','wall','ceil','door','dframe','ddoor','beam','post','heavy','tek','csheavy','cstek','flyer','tesla','gen','vault','thatch'];
+const PATH_KEYS = ['floor','wall','ceil','door','dframe','ddoor','beam','post','pillar','heavy','tek','csheavy','cstek','flyer','tesla','gen','vault','thatch'];
 
 /* ================= state ================= */
 const S = {N:8, stories:1, h:1, cur:0, roof:true,
   cat:'structure', piece:CATS.structure[0], snap:300,
   cells:[new Set()], edges:[new Map()], free:[], sel:null,
-  customPath:CUSTOM_PRESETS[0][1], thatchBack:true, beamPosts:true, imp:null,
+  customPath:CUSTOM_PRESETS[0][1], thatchBack:true, beamPosts:true, imp:null, ter:null,
   gx:{}};                                                                   // grid piece key -> imported paint/skin etc. (see entryExtras)
 let nextId = 1;
 ['3,3','4,3','3,4','4,4'].forEach(k => S.cells[0].add(k));
@@ -1828,16 +1832,169 @@ function setMaterial(m){
   $('matNote').innerHTML = d.tested
     ? 'Paths confirmed from real in-game exports.'
     : '<span class="warn">Paths are best guesses. Test a small build first.</span>';
+  $('p_pillarLabel').textContent = 'Pillar to the ground' + (PILLAR_OK[m] ? '' : ' (check)');
 }
 function freeZ(f){
   const H = S.h, isItem = f.kind !== 'custom';
   const lvl = f.lvl === 'roof' ? S.stories : f.lvl;
   let base;
+  if(f.gnd && f.lvl === 0 && (f.base || 'surface') === 'surface' && !onFoundation(f.x, f.y))
+    return groundE(f.x, f.y) + (isItem ? CAL.surfaceLift : 0) + (+f.zOff || 0);      // on the ground (a foundation under it wins)
   if(f.base === 'walltop' && f.lvl !== 'roof') base = 90 + 300*(lvl+1)*H + (isItem ? CAL.wallTopLift : 0);
   else if(f.base === 'beamtop' && f.lvl !== 'roof') base = 90 + 300*(lvl+1)*H + (isItem ? CAL.beamLift : 0);   // flat thin pillars: +7.5
   else if(f.base === 'wallface' && f.lvl !== 'roof') base = 240 + 300*lvl*H + (isItem ? CAL.faceUp : 0);   // centre of the floor's first wall
   else base = (lvl===0 ? 90 : 90 + 300*lvl*H) + (isItem ? CAL.surfaceLift : 0);                  // foundations/ceilings: +10
   return base + (+f.zOff || 0);
+}
+
+/* ================= ground: the shape of the spot the base stands on =================
+   The base stays level, on its highest ground; pillars reach down to the rest. The ground itself is never exported:
+   only the pillars it calls for, and the template's z measured from the ground under its origin. */
+const GROUND_Z = -12;                                                      // where flat ground is drawn
+const TER = {step:300, pad:10, maxH:3000, floatOk:50, dig:50, buryMax:60, liftMin:-50, liftMax:1200, liftStep:50,
+  brushR:900, rate:600, far:30000};
+const PILLAR_OK = {metal:false, stone:true, wood:false};                  // pillar path seen in a real export
+let LAST_G = {off:0, maxE:0, minE:0, on:false, pillars:0}, LAST_ANCHOR = {x:0, y:0, cz:0, on:false}, RENDER_HOLD = 0;
+const TER3 = {mesh:null, src:null, off:null, ring:null, pin:null, gen:0};
+const SCULPT = {tool:'raise', live:null, pending:null, off0:null};
+// S.ter: null (flat), or {x0, y0, n, h:Int16Array(n*n), lift, hMin, hMax}: one height per foundation corner, x0/y0 at a
+// corner (-150 mod 300). Never changed in place once it's in S: every edit makes a new object, so undo can hold the old one.
+// Outside the lattice the ground carries on at its edge height, so growing the lattice never changes the ground.
+function terStats(t){ let lo = Infinity, hi = -Infinity; for(const v of t.h){ if(v < lo) lo = v; if(v > hi) hi = v; } t.hMin = lo; t.hMax = hi; return t; }
+function terNew(){ const n = S.N + 1 + 2*TER.pad, o = -150 - 300*TER.pad; return terStats({x0:o, y0:o, n, h:new Int16Array(n*n), lift:0}); }
+function terFlat(t){ return !t || (!t.lift && t.hMin === 0 && t.hMax === 0); }
+function terRaw(t, i, j){ const n = t.n; i = i < 0 ? 0 : i > n - 1 ? n - 1 : i; j = j < 0 ? 0 : j > n - 1 ? n - 1 : j; return t.h[j*n + i]; }
+// height between samples: two triangles a square, cut from (i,j) to (i+1,j+1), exactly as the mesh draws it
+function terH(t, x, y){
+  const n = t.n, fx = clamp((x - t.x0)/300, 0, n - 1), fy = clamp((y - t.y0)/300, 0, n - 1);
+  const i = Math.min(n - 2, Math.floor(fx)), j = Math.min(n - 2, Math.floor(fy)), u = fx - i, v = fy - j, h = t.h;
+  const a = h[j*n + i], b = h[j*n + i + 1], c = h[(j + 1)*n + i + 1], d = h[(j + 1)*n + i];
+  return u >= v ? a + u*(b - a) + v*(c - b) : a + v*(d - a) + u*(c - d);
+}
+// a lattice covering the grid plus the margin (and everything it covered before); the same ground everywhere
+function terEnsure(t){
+  const P = TER.pad, lo = -150 - 300*P, hi = S.N*300 - 150 + 300*P, oldHi = x => x + 300*(t.n - 1);
+  let x0 = Math.min(t.x0, lo), y0 = Math.min(t.y0, lo);
+  const x1 = Math.max(oldHi(t.x0), hi), y1 = Math.max(oldHi(t.y0), hi);
+  let n = Math.max(x1 - x0, y1 - y0)/300 + 1;
+  if(x0 === t.x0 && y0 === t.y0 && n === t.n) return t;
+  if(n > 2*(MAX_N + 1 + 2*P)){ x0 = y0 = lo; n = (hi - lo)/300 + 1; }      // drifted far away: keep the part round the grid
+  const out = {x0, y0, n, h:new Int16Array(n*n), lift:t.lift};
+  for(let j = 0; j < n; j++) for(let i = 0; i < n; i++)
+    out.h[j*n + i] = terRaw(t, (x0 + 300*i - t.x0)/300, (y0 + 300*j - t.y0)/300);
+  return terStats(out);
+}
+function terNow(){ return SCULPT.live ? SCULPT.live.t : S.ter; }        // what's drawn (a stroke in progress)
+function groundE(x, y){ return S.ter ? terH(S.ter, x, y) + LAST_G.off : 0; }                 // template space: 0 = where the Hammer aims
+function groundZ(x, y){ const t = terNow(); return GROUND_Z + (t ? terH(t, x, y) + LAST_G.off : 0); }   // where it's drawn
+function onFoundation(x, y){ const c = Math.round(x/300), r = Math.round(y/300); return inGrid(c, r) && S.cells[0].has(`${c},${r}`); }
+// the level: the highest ground under a floor-0 foundation corner, or under the middle of the area if there are none
+function groundCtx(){
+  const t = S.ter;
+  if(!t) return LAST_G = {off:0, maxE:0, minE:0, on:false, pillars:0};
+  let max = -Infinity;
+  for(const k of S.cells[0]){
+    const [c, r] = k.split(',').map(Number); if(!inGrid(c, r)) continue;
+    for(const [i, j] of [[c, r], [c + 1, r], [c, r + 1], [c + 1, r + 1]]) max = Math.max(max, terH(t, i*300 - 150, j*300 - 150));
+  }
+  if(max === -Infinity) max = terH(t, (S.N - 1)*150, (S.N - 1)*150);
+  const off = -max - t.lift;
+  return LAST_G = {off, maxE:t.hMax + off, minE:t.hMin + off, on:true, pillars:0};
+}
+// pillar stacks someone placed (or imported) at foundation corners: corner "i,j" -> the stack's bottom
+function placedPillarCorners(){
+  const m = new Map();
+  for(const f of S.free){
+    if(f.lvl !== 0 || f.kind !== 'custom' || shapeOf(f) !== 'bigpost') continue;
+    const i = Math.round((f.x + 150)/300), j = Math.round((f.y + 150)/300);
+    if(Math.hypot(f.x - (i*300 - 150), f.y - (j*300 - 150)) > 20) continue;
+    const z = freeZ(f); if(z >= 40) continue;
+    const q = `${i},${j}`, b = z - CAL.pillarStep/2; m.set(q, Math.min(m.has(q) ? m.get(q) : Infinity, b));
+  }
+  return m;
+}
+// the pillars under the foundations: every corner the ground drops away from, down to TER.dig into the ground
+function pillarStacks(){
+  const out = []; if(!S.ter) return out;
+  const own = new Map();                                                  // corner -> the foundations it holds up
+  for(const k of S.cells[0]){
+    const [c, r] = k.split(',').map(Number); if(!inGrid(c, r)) continue;
+    for(const q of [`${c},${r}`, `${c + 1},${r}`, `${c},${r + 1}`, `${c + 1},${r + 1}`]){ if(!own.has(q)) own.set(q, []); own.get(q).push(`c:0:${k}`); }
+  }
+  const top = 40 + CAL.pillarUnder + CAL.pillarStep/2, have = placedPillarCorners();
+  for(const [q, keys] of own){
+    const [i, j] = q.split(',').map(Number), x = i*300 - 150, y = j*300 - 150;
+    const from = have.has(q) ? Math.min(top, have.get(q)) : top;          // under a stack that's already there
+    const gap = from - groundE(x, y);
+    if(gap <= TER.floatOk) continue;
+    const n = Math.ceil((gap + TER.dig)/CAL.pillarStep);
+    for(let k = 0; k < n; k++) out.push({x, y, z:from - CAL.pillarStep/2 - k*CAL.pillarStep, own:keys});
+  }
+  return out;
+}
+// the middle of the floor-0 foundations, or of the build area when there are none
+function groundAnchor(){
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for(const k of S.cells[0]){ const [c, r] = k.split(',').map(Number); if(!inGrid(c, r)) continue;
+    x0 = Math.min(x0, c); x1 = Math.max(x1, c); y0 = Math.min(y0, r); y1 = Math.max(y1, r); }
+  return x0 === Infinity ? {x:(S.N - 1)*150, y:(S.N - 1)*150} : {x:(x0 + x1)*150, y:(y0 + y1)*150};
+}
+// a design that replaces the old one (an example, a generator, an import) keeps the shaped spot under its middle
+function followGround(a0){
+  if(!S.ter || !a0) return false;
+  const a1 = groundAnchor(), dx = Math.round((a1.x - a0.x)/300)*300, dy = Math.round((a1.y - a0.y)/300)*300;
+  if(!dx && !dy) return false;
+  S.ter = {...S.ter, x0:S.ter.x0 + dx, y0:S.ter.y0 + dy}; return true;
+}
+function keepGround(load){ const a0 = groundAnchor(); RENDER_HOLD++; try { load(); } finally { RENDER_HOLD--; } followGround(a0); render(); }
+// a fresh ground shape round the build (or the middle of the area); slopes and cliffs fall toward the camera
+function shapeLattice(kind){
+  const t = terEnsure(terNew()), n = t.n, a = groundAnchor(), ux = Math.cos(cam.th), uy = -Math.sin(cam.th);
+  let ext = 600, rad = 850;                                                // reach of the foundations that way, and round the middle
+  for(const k of S.cells[0]){ const [c, r] = k.split(',').map(Number); if(!inGrid(c, r)) continue;
+    for(const [i, j] of [[c, r], [c + 1, r], [c, r + 1], [c + 1, r + 1]]){ const dx = i*300 - 150 - a.x, dy = j*300 - 150 - a.y;
+      ext = Math.max(ext, dx*ux + dy*uy); rad = Math.max(rad, Math.hypot(dx, dy)); } }
+  const sm = (e0, e1, v) => { const q = clamp((v - e0)/(e1 - e0), 0, 1); return q*q*(3 - 2*q); };
+  for(let j = 0; j < n; j++) for(let i = 0; i < n; i++){
+    const dx = t.x0 + 300*i - a.x, dy = t.y0 + 300*j - a.y, s = dx*ux + dy*uy, r = Math.hypot(dx, dy), L = ext + 1500;
+    const v = kind === 'slope' ? -L*Math.tanh(s/L)/6                       // 1 in 6, levelling off 5 foundations out
+      : kind === 'cliff' ? -1500*sm(ext - 300, ext, s)                     // drops 1,500 under the base's front row
+      : kind === 'hill' ? 900*(1 - sm(0, rad + 1800, r))
+      : kind === 'dip' ? -600*(1 - sm(0, rad + 1200, r)) : 0;
+    t.h[j*n + i] = Math.round(clamp(v, -TER.maxH, TER.maxH));
+  }
+  return terStats(t);
+}
+function applyShape(kind){
+  sculptEnd(false);
+  const lift = S.ter ? S.ter.lift : 0, t = kind === 'flat' ? null : {...shapeLattice(kind), lift};
+  S.ter = terFlat(t) ? null : t; HIST.lastT = 0; render();
+}
+function setLift(dir){
+  const t = S.ter || terEnsure(terNew()), lift = clamp(t.lift + dir*TER.liftStep, TER.liftMin, TER.liftMax);
+  if(lift === t.lift) return;
+  const next = {...t, lift}; S.ter = terFlat(next) ? null : next; HIST.lastT = 0; render();
+}
+function sculptEnd(){}                                                     // (the brush comes with the Ground tool)
+const TER_B64 = new WeakMap();                                             // h -> base64, so the autosave doesn't redo it
+function terEnc(t){
+  if(!t) return null;
+  let s = TER_B64.get(t.h);
+  if(!s){ const b = new Uint8Array(t.h.buffer, t.h.byteOffset, t.h.byteLength); let bin = '';
+    for(let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    s = btoa(bin); TER_B64.set(t.h, s); }
+  return {v:1, x0:t.x0, y0:t.y0, n:t.n, lift:t.lift, h:s};
+}
+function terDec(d){
+  try {
+    const on = v => Number.isInteger(v) && ((v % 300) + 300) % 300 === 150;
+    if(!d || d.v !== 1 || !Number.isInteger(d.n) || d.n < 2 || d.n > 400 || !on(d.x0) || !on(d.y0)) return null;
+    const bin = atob(d.h); if(bin.length !== d.n*d.n*2) return null;
+    const b = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+    const h = new Int16Array(b.buffer); for(let i = 0; i < h.length; i++) h[i] = clamp(h[i], -TER.maxH, TER.maxH);
+    const t = terStats({x0:d.x0, y0:d.y0, n:d.n, h, lift:clamp(Math.round(+d.lift || 0), TER.liftMin, TER.liftMax)});
+    return terFlat(t) ? null : t;
+  } catch(_) { return null; }
 }
 
 /* ================= palette ================= */
@@ -1908,6 +2065,7 @@ $('cats').addEventListener('click', () => { if(S.cat === 'custom' && !S.piece.pa
 const C = 44, P = 14;
 const svg = $('grid');
 function render(opts={}){
+  if(RENDER_HOLD) return;                                                  // keepGround(): one render after a loader, not two
   refreshImportLevels();
   const N = S.N, s = S.cur, roof = isRoof();
   if(!V3.on){                                                             // the flat plan is only drawn while it's on screen
@@ -2183,12 +2341,12 @@ function syncInspector(){
   $('fX').value = f.x; $('fY').value = f.y; $('fBase').value = f.base;
   $('fZ').value = f.zOff; $('fYaw').value = f.yaw;
   $('fPitch').value = f.pitch || 0; $('fRoll').value = f.roll || 0;
-  $('fFinal').value = outZ(freeZ(f));
+  $('fFinal').value = outZ(freeZ(f)) - LAST_ANCHOR.cz;
 }
 function editSel(fn, full){
   const f = selected(); if(!f) return;
   fn(f);
-  $('fFinal').value = outZ(freeZ(f));
+  $('fFinal').value = outZ(freeZ(f)) - LAST_ANCHOR.cz;
   render({keepInspector: !full});
 }
 $('fKind').onchange = e => editSel(f => { f.kind = e.target.value; if(f.kind==='custom' && !f.path) f.path = S.customPath; }, true);
@@ -2501,8 +2659,8 @@ function loadCoreCage(size, outer, tall, opt = {}){
   $('mat').value = 'metal'; setMaterial('metal'); $('tName').value = opt.name || (outer ? `Core cage in ${outer}x${outer} cage` : `Core cage ${size}x${size}`);
   render();
 }
-$('exCore14s').onclick = () => loadCoreCage(6, 14, 7);                 // the tallest version that fits in one template (1,980 pieces)
-$('exCore6').onclick = () => loadCoreCage(6);
+$('exCore14s').onclick = () => keepGround(() => loadCoreCage(6, 14, 7));   // the tallest version that fits in one template (1,980 pieces)
+$('exCore6').onclick = () => keepGround(() => loadCoreCage(6));
 
 /* ================= import ================= */
 const outZ = z => z - (S.imp ? S.imp.shift.z : 0);
@@ -2693,6 +2851,7 @@ function importAdd(text){
 // Start a fresh design from an import (what Import used to do), with everything editable.
 function importReplace(text){
   const t = parseTemplate(text); if(t.err) return t.err;
+  const a0 = groundAnchor();                                               // the shaped spot stays under the new build
   if(PASTE.on) endPaste();
   const was = {minFloors:S.minFloors, cur:S.cur}, had = [...UI.sel];
   S.h = 1;                                                               // read it as one wall per floor, like the design it becomes
@@ -2709,6 +2868,7 @@ function importReplace(text){
   if(!placed){ Object.assign(S, was); undoQuiet(had); return 'That build is too big for the planner.'; }
   $('stories').value = String(S.stories);
   $('tName').value = (t.obj.name || 'Imported build').trim();
+  followGround(a0);
   UI.sel.clear(); render();
   return `Imported ${importNote(info, t.raw.length)}`;
 }
@@ -2838,7 +2998,7 @@ function loadCage(){
   $('beamPosts').checked = false; $('mat').value = 'metal'; setMaterial('metal'); $('tName').value = 'Cage tower 11x11';
   render();
 }
-$('exCage').onclick = loadCage;
+$('exCage').onclick = () => keepGround(loadCage);
 
 /* ================= PvE examples: a starter house, a breeding barn and a crop farm ================= */
 // a piece from the Custom list by its name (stone roofs, ramps, crop plots...)
@@ -2945,9 +3105,9 @@ function loadPveFarm(){
   $('beamPosts').checked = true; $('mat').value = 'stone'; setMaterial('stone'); $('tName').value = 'Crop farm';
   render();
 }
-$('exPveHouse').onclick = loadPveHouse;
-$('exPveBarn').onclick = loadPveBarn;
-$('exPveFarm').onclick = loadPveFarm;
+$('exPveHouse').onclick = () => keepGround(loadPveHouse);
+$('exPveBarn').onclick = () => keepGround(loadPveBarn);
+$('exPveFarm').onclick = () => keepGround(loadPveFarm);
 
 /* ================= template generation ================= */
 
@@ -2981,6 +3141,7 @@ function placeOrder(list){
 }
 function build(){
   BC_CACHE = null; BEAM_SUP = new Map();
+  groundCtx();                                                             // the level, before any piece's height is worked out
   const paths = {}; for(const k of PATH_KEYS) paths[k] = pathInputs[k].value.trim();
   const list = [], H = S.h, N = S.N;
   let LV = 0, SK = null;                                               // SK: what selecting/deleting this piece acts on
@@ -3046,7 +3207,9 @@ function build(){
       for(let i=0;i<H;i++){ add('post', c*300-150, r*300-150, 240 + 300*(s*H + i), 0); list[list.length - 1].own = beamsAt.get(q) || []; }
     }
   }
-  SK = null;
+  LV = 0; SK = null;                                                       // pillars down to the ground: floor 0, no selection key or paint
+  const stacks = pillarStacks(); LAST_G.pillars = stacks.length;
+  for(const p of stacks){ add('pillar', p.x, p.y, p.z, 0); list[list.length - 1].own = p.own; }
   for(const t of thatchSpots.values()){ LV = Math.floor((t.z - 90)/(300*H)); add('thatch', t.x, t.y, t.z, t.yaw); list[list.length - 1].own = ['f:' + t.fid]; }
   LV = S.stories;
   if(S.roof){
@@ -3064,13 +3227,16 @@ function build(){
       lv: f.lvl === 'roof' ? S.stories : f.lvl, fid: f.id, sk:'f:' + f.id, extra:f.extra});
   }
   placeOrder(list);                                                        // what holds a piece up is always listed before it
-  let cx=0, cy=0;
-  if(S.imp){ cx = S.imp.shift.x; cy = S.imp.shift.y; }
+  let cx = 0, cy = 0, cz = 0;
+  if(S.imp){ cx = S.imp.shift.x; cy = S.imp.shift.y; }                     // legacy imports: raw entries go out as they are
   else if(list.length){
-    const xs=list.map(e=>e.x), ys=list.map(e=>e.y);
-    cx=(Math.min(...xs)+Math.max(...xs))/2; cy=(Math.min(...ys)+Math.max(...ys))/2;
+    const core = list.filter(e => e.kind !== 'pillar');                  // the origin doesn't move as pillars come and go
+    const xs = core.map(e => e.x), ys = core.map(e => e.y);
+    cx = (Math.min(...xs) + Math.max(...xs))/2; cy = (Math.min(...ys) + Math.max(...ys))/2;
+    if(S.ter) cz = Math.round(groundE(cx, cy));                          // z from the ground under the origin (aim there)
   }
-  const entries = list.map(e => entryOf(e, cx, cy));
+  LAST_ANCHOR = {x:cx, y:cy, cz, on:!!S.ter && !S.imp && list.length > 0};
+  const entries = list.map(e => entryOf(e, cx, cy, cz));
   if(S.imp) entries.unshift(...S.imp.raw);
   const tpl = {dataVersion: 1, name: $('tName').value || 'base', creator: S.imp ? (S.imp.creator || 'AI') : 'AI',
     description: '', miscData: '', snapOverrides: [], entries};
@@ -3078,10 +3244,10 @@ function build(){
 }
 
 // one piece as a Template Hammer entry, placed relative to (cx, cy)
-function entryOf(e, cx, cy){
+function entryOf(e, cx, cy, cz = 0){
   return {
     structure: e.path,
-    loc: {x: e.x - cx, y: e.y - cy, z: outZ(e.z)},
+    loc: {x: e.x - cx, y: e.y - cy, z: cz ? outZ(e.z) - cz : outZ(e.z)},
     rot: {pitch: e.pitch||0, yaw: e.yaw, roll: e.roll||0},
     bIsFlipped: false, variant: "None", skin: "None", skinId: 0, skinVariant: 0,
     skinData: {floatParams: [], stringParams: [], objectParams: [], nameParams: []},
@@ -3106,9 +3272,11 @@ function selectionTemplate(sks){
   const inBox = rc => box && rc[0] >= box[0] && rc[0] <= box[2] && rc[1] >= box[1] && rc[1] <= box[3];
   const pick = list.filter(e => (e.sk && sel.has(e.sk)) || (e.own && e.own.some(o => sel.has(o))) || (e.roofCell && inBox(e.roofCell)));
   let cx = 0, cy = 0;
-  if(pick.length){ const xs = pick.map(e => e.x), ys = pick.map(e => e.y); cx = (Math.min(...xs) + Math.max(...xs))/2; cy = (Math.min(...ys) + Math.max(...ys))/2; }
+  const mid = pick.filter(e => e.kind !== 'pillar').length ? pick.filter(e => e.kind !== 'pillar') : pick;
+  if(mid.length){ const xs = mid.map(e => e.x), ys = mid.map(e => e.y); cx = (Math.min(...xs) + Math.max(...xs))/2; cy = (Math.min(...ys) + Math.max(...ys))/2; }
+  const cz = S.ter && !S.imp && pick.length ? Math.round(groundE(cx, cy)) : 0;   // measured from the ground under the part's middle
   const tpl = {dataVersion:1, name:`${$('tName').value || 'base'} (part)`, creator:'AI', description:'', miscData:'', snapOverrides:[],
-    entries:pick.map(e => entryOf(e, cx, cy))};
+    entries:pick.map(e => entryOf(e, cx, cy, cz))};
   return {tpl, n:pick.length, old:[...sel].filter(sk => sk.startsWith('i:')).length};
 }
 // copy just the selected part's template code to the clipboard
@@ -3133,11 +3301,18 @@ let saveTimer = 0;
 function snapshot(){
   return {N:S.N, stories:S.stories, h:S.h, cur:S.cur, roof:S.roof, thatchBack:S.thatchBack, beamPosts:S.beamPosts,
     cells:S.cells.map(c => [...c]), edges:S.edges.map(m => [...m]), free:S.free, gx:S.gx, nextId, imp:S.imp, customPath:S.customPath,
-    mat:$('mat').value, name:$('tName').value, paths:Object.fromEntries(PATH_KEYS.map(k => [k, pathInputs[k].value]))};
+    mat:$('mat').value, name:$('tName').value, paths:Object.fromEntries(PATH_KEYS.map(k => [k, pathInputs[k].value])), ter:terEnc(S.ter)};
 }
 function autosave(){
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); } catch(e) {} }, 400);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); }
+    catch(e){
+      if(!S.ter) return;
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify({...snapshot(), ter:null})); } catch(_) { return; }
+      if(!autosave.warned){ autosave.warned = true; flashHint('Browser storage is full, so the ground shape isn’t being saved.'); }
+    }
+  }, 400);
 }
 function restore(){
   let d = null;
@@ -3148,6 +3323,7 @@ function restore(){
   S.cells = d.cells.map(a => new Set(a)); S.edges = d.edges.map(a => new Map(a));
   S.free = Array.isArray(d.free) ? d.free : []; nextId = d.nextId || (S.free.reduce((m,f) => Math.max(m, f.id), 0) + 1);
   S.gx = d.gx && typeof d.gx === 'object' ? d.gx : {};
+  S.ter = terDec(d.ter);                                                   // old saves: flat
   for(const f of S.free) if(f.exact){                                     // saved by a short-lived version: same height, the usual way
     if(f.kind !== 'custom'){ const lift = f.lvl === 'roof' ? CAL.surfaceLift : f.base === 'walltop' ? CAL.wallTopLift : f.base === 'beamtop' ? CAL.beamLift
       : f.base === 'wallface' ? CAL.faceUp : CAL.surfaceLift; f.zOff = Math.round(((+f.zOff || 0) - lift)*1000)/1000; }
@@ -3357,6 +3533,7 @@ function autoNote(e){
   if(e.auto) return 'the automatic roof (turn off "Roof over top floor" to remove it)';
   if(e.kind === 'thatch') return 'a placeholder behind a sideways turret (delete the turret and it goes)';
   if(e.kind === 'post') return 'added under beams automatically ("Pillars under beams" in Build settings)';
+  if(e.kind === 'pillar') return 'added under the foundations to reach the ground';
   return '';
 }
 function colorOf(shape, e){
@@ -4686,14 +4863,14 @@ const HIST = {past:[], future:[], last:null, lastT:0, inGesture:false, pushed:fa
 function histState(){
   return {json:JSON.stringify({N:S.N, st:S.stories, h:S.h, roof:S.roof, tb:S.thatchBack, bp:S.beamPosts,
     c:S.cells.map(c => [...c]), e:S.edges.map(m => [...m]), f:S.free, gx:S.gx, mat:$('mat').value}),
-    imp: S.imp ? {obj:S.imp, raw:S.imp.raw, items:S.imp.items, shift:S.imp.shift, centre:S.imp.centre} : null};
+    imp: S.imp ? {obj:S.imp, raw:S.imp.raw, items:S.imp.items, shift:S.imp.shift, centre:S.imp.centre} : null, ter:S.ter};
 }
 function recordHistory(){
   if(HIST.applying) return;
   if(HIST.inGesture && HIST.pushed){ HIST.dirty = true; return; }          // mid-drag: the step is already saved
   const cur = histState(), L = HIST.last;
   if(!L){ HIST.last = cur; return updateUndo(); }
-  if(L.json === cur.json && (L.imp && L.imp.raw) === (cur.imp && cur.imp.raw) && (L.imp && L.imp.items) === (cur.imp && cur.imp.items)) return;
+  if(L.json === cur.json && (L.imp && L.imp.raw) === (cur.imp && cur.imp.raw) && (L.imp && L.imp.items) === (cur.imp && cur.imp.items) && L.ter === cur.ter) return;
   const now = Date.now();
   const merge = HIST.inGesture ? HIST.pushed : (now - HIST.lastT < 500);
   if(!merge){ HIST.past.push(L); if(HIST.past.length > 150) HIST.past.shift(); HIST.future = []; HIST.lastT = now; if(HIST.inGesture) HIST.pushed = true; }
@@ -4707,6 +4884,7 @@ function applyHist(h){
   S.cells = d.c.map(a => new Set(a)); S.edges = d.e.map(a => new Map(a)); S.free = d.f; S.gx = d.gx || {};
   if(S.N !== d.N) setGridSize(d.N);
   if(h.imp){ S.imp = h.imp.obj; Object.assign(S.imp, {raw:h.imp.raw, items:h.imp.items, shift:h.imp.shift, centre:h.imp.centre}); } else S.imp = null;
+  S.ter = h.ter || null;
   nextId = Math.max(nextId, ...S.free.map(f => f.id + 1));
   if($('mat').value !== d.mat){ $('mat').value = d.mat; setMaterial(d.mat); }
   ensureStories();
@@ -4795,6 +4973,7 @@ function shiftAll(dc, dr){
   S.edges = S.edges.map(m => new Map([...m].map(([k, t]) => { const [o, c, r] = k.split(','); return [`${o},${+c+dc},${+r+dr}`, t]; })));
   for(const f of S.free){ f.x += dx; f.y += dy; }
   S.gx = Object.fromEntries(Object.entries(S.gx).map(([k, v]) => [shiftSk(k, dc, dr), v]));
+  if(S.ter) S.ter = {...S.ter, x0:S.ter.x0 + dx, y0:S.ter.y0 + dy};        // a new object (undo holds the old one); h is shared
   if(S.imp){
     S.imp.items = S.imp.items.map(it => ({...it, x:it.x + dx, y:it.y + dy}));
     S.imp.shift = {...S.imp.shift, x:S.imp.shift.x + dx, y:S.imp.shift.y + dy};
@@ -5315,7 +5494,7 @@ $('walkBuild').onclick = () => walkBuildToggle();
 const TURRET_KINDS = ['heavy', 'tek', 'csheavy', 'cstek', 'flyer'];
 const isCustomTurret = e => e.kind === 'custom' && ['heavy', 'tek', 'hive'].includes(shapeOf(e));   // e.g. an imported mod turret
 const isTurretEntry = e => TURRET_KINDS.includes(e.kind) || isCustomTurret(e);
-const GROUP_SHAPE = {floor:'foundation', wall:'wall', ceil:'ceiling', door:'door', dframe:'dframe', ddoor:'ddoor', beam:'beam', post:'post',
+const GROUP_SHAPE = {floor:'foundation', wall:'wall', ceil:'ceiling', door:'door', dframe:'dframe', ddoor:'ddoor', beam:'beam', post:'post', pillar:'bigpost',
   heavy:'heavy', tek:'tek', csheavy:'heavy', cstek:'tek', flyer:'hive', tesla:'tesla', gen:'gen', vault:'vault', thatch:'thatch',
   custom:'block', turrets:'heavy', imp:'block', impTur:'tek'};
 const isImpTurret = e => e.kind === 'imp' && ['heavy', 'tek', 'hive'].includes(shapeOf(e));
@@ -5342,7 +5521,7 @@ const COUNT_CATS = [
   ['Defense', [['Heavy turrets','heavy'],['Tek turrets','tek'],['CS heavy turrets','csheavy'],['CS Tek turrets','cstek'],['Bladewasp hives','flyer'],['Tesla coils','tesla']]],
   ['Building', [['Foundations','floor'],['Walls','wall'],['Ceilings','ceil'],['Doorframes','door'],['Double doorframes','dframe'],['Double doors','ddoor'],['Beams','beam']]],
   ['Utility', [['Generators','gen'],['Vaults','vault']]],
-  ['Added automatically', [['Pillars under beams','post'],['Thatch placeholders','thatch']]],
+  ['Added automatically', [['Pillars under beams','post'],['Pillars to the ground','pillar'],['Thatch placeholders','thatch']]],
 ];
 function byName(entries, prefix, cat){
   const m = new Map();
@@ -5356,7 +5535,7 @@ function countGroups(list){
   const impTur = imp.filter(isImpTurret).length;
   for(const [cat, rows] of COUNT_CATS){
     if(cat === 'Defense' && mine + impTur) out.push({id:'turrets', label:'All turrets', n:mine + impTur, cat});
-    for(const [label, id] of rows) if(n(id)) out.push({id, label, n:n(id), cat});
+    for(const [label, id] of rows) if(n(id)) out.push({id, label:label + (id === 'pillar' && !PILLAR_OK[$('mat').value] ? ' (check)' : ''), n:n(id), cat});
     if(cat === 'Utility') out.push(...byName(list.filter(e => e.kind === 'custom'), 'custom:', 'Custom pieces'));
   }
   if(imp.length) out.push({id:'imp', label:'Everything imported', n:imp.length, cat:'Imported'}, ...byName(imp, 'imp:', 'Imported'));
@@ -5915,7 +6094,8 @@ $('cmpClear').onclick = () => {
 
 /* ================= learn from your exports: exact offsets, and new pieces ================= */
 const CAL_LABELS = {surfaceLift:'Turret above a foundation or ceiling', beamLift:'Turret above a flat pillar', wallTopLift:'Turret above a wall top',
-  faceOut:'Sideways turret out from the wall', faceUp:'Sideways turret above the wall\u2019s middle', postAlong:'Turret on a doorframe post, from the frame\u2019s middle'};
+  faceOut:'Sideways turret out from the wall', faceUp:'Sideways turret above the wall\u2019s middle', postAlong:'Turret on a doorframe post, from the frame\u2019s middle',
+  pillarUnder:'Pillar under a foundation corner, from the foundation', pillarStep:'One pillar to the next in a stack'};
 let LEARNT = null;
 function learnFromExport(text){
   const es = parseExport(text);
@@ -5941,13 +6121,22 @@ function learnFromExport(text){
       else if(wallish.test(p)) got.wallTopLift = tz - (z + 150);
     }
   }
+  // pillars under a foundation's corner: how far under it, and one to the next in a stack
+  const isPillar = e => /[/_]Pillar_(Metal|Stone|Wood)\./i.test(e.structure), floors = es.filter(e => /Floor_|Foundation/i.test(e.structure) && !/Tri/i.test(e.structure));
+  for(const p of es.filter(isPillar)){
+    const f = floors.find(q => q.loc.z > p.loc.z && Math.abs(Math.abs(p.loc.x - q.loc.x) - 150) < 20 && Math.abs(Math.abs(p.loc.y - q.loc.y) - 150) < 20);
+    if(!f) continue;
+    const stack = es.filter(q => isPillar(q) && Math.hypot(q.loc.x - p.loc.x, q.loc.y - p.loc.y) < 5 && q.loc.z < f.loc.z).sort((a, b) => b.loc.z - a.loc.z);
+    got.pillarUnder = stack[0].loc.z - f.loc.z;
+    if(stack.length > 1 && stack[0].loc.z - stack[1].loc.z >= 200 && stack[0].loc.z - stack[1].loc.z <= 400) got.pillarStep = stack[0].loc.z - stack[1].loc.z;
+  }
   for(const k in got) got[k] = Math.round(got[k]*10)/10;
   const known = new Set(CUSTOM_PRESETS.map(p => p[1]).concat(Object.values(MATS).flatMap(m => Object.values(m))));
   const fresh = [...new Set(es.map(e => e.structure))].filter(p => !known.has(p) && !/Turret|TekGenerator|StorageBox_Huge|TeslaCoil|AntiFlyer/i.test(p));
   LEARNT = {got, fresh};
   const rows = Object.keys(got).map(k => `<tr><td>${CAL_LABELS[k]}</td><td>${CAL[k]}</td><td><b>${got[k]}</b></td></tr>`).join('');
   $('learnOut').innerHTML = (rows ? `<table class="calTable"><tr><th></th><th>Now</th><th>From your export</th></tr>${rows}</table><button class="primary" id="learnUse">Use these numbers</button>`
-      : '<p>No turrets in that export to learn positions from.</p>')
+      : '<p>Nothing in that export to learn positions from.</p>')
     + (fresh.length ? `<p>${fresh.length} ${fresh.length === 1 ? 'piece' : 'pieces'} the planner doesn\u2019t know yet:</p><ul class="freshList">${fresh.map(p => `<li>${p.split('.').pop().replace(/_C$/, '')}</li>`).join('')}</ul><button id="learnAdd">Add them to Custom pieces</button>` : '');
   if($('learnUse')) $('learnUse').onclick = () => {
     Object.assign(CAL, LEARNT.got);
@@ -6047,6 +6236,7 @@ const COST_KNOWN = {foundation:{ingot:50, paste:15}, wall:{ingot:25, paste:7}, c
   door:{ingot:20, paste:6}, ddoor:{ingot:20, paste:8}, railing:{ingot:12, paste:3}, trifound:{ingot:25, paste:8}, triceil:{ingot:18, paste:5},
   gateway:{ingot:170, paste:50}, gate:{ingot:35, paste:10}, bgateway:{ingot:2100, paste:490, poly:140},
   beam:PILLAR_COST, flathalf:PILLAR_COST, post:PILLAR_COST, halfpost:PILLAR_COST,
+  bigpost:{...PILLAR_COST, guess:true, note:'Assumed to cost the same as thin pillars (all the Metal Pillar item)'},
   railL:{ingot:12, paste:3, guess:true, note:'Assumed to cost the same as a Metal Railing'}, railR:{ingot:12, paste:3, guess:true, note:'Assumed to cost the same as a Metal Railing'},
   heavy:{ingot:540, paste:200, elec:270, poly:70, note:'Includes the Auto Turret it\u2019s crafted from (140 ingot, 50 paste, 70 electronics, 20 polymer)'},
   tek:{ingot:100, paste:50, elec:100, poly:50, el:3},
@@ -6103,21 +6293,32 @@ function genOptions(){
   return {mid:+$('genMid').value, outer:+$('genOuter').value, floors:+$('genFloors').value,
     opt:{core:$('genCore').value === 'yes', roof:$('genRoof').value, midEvery:+$('genEvery').value, cageRows:+$('genRows').value, ground:$('genGround').checked, pattern:$('genPattern').value, hang:$('genHang').value}};
 }
-function genMeasure(mid, outer, floors, opt){
-  loadCoreCage(mid, outer, floors, {...opt, dry:true});
-  const {tpl, list} = build();
-  return {pieces:tpl.entries.length, turrets:list.filter(e => TURRET_KINDS.includes(e.kind)).length};
+// Every generator goes through here: the shaped ground stays under the new build, the tallest height that fits is found
+// with the pillars counted, then it's built. A new generator only needs a loader with a dry mode that doesn't render,
+// whose floor-0 footprint doesn't depend on the height.
+function runGenerator({load, lo, want, fit, out, say, stuck}){
+  const over = m => m.turrets > TURRET_CAP || (fit === 'one' && m.pieces > TPL_CAP);
+  let a0 = groundAnchor();
+  const measure = f => {
+    load(f, true);
+    if(a0){ followGround(a0); a0 = null; }                                 // same footprint at every height: once is enough
+    const {tpl, list} = build();
+    return {pieces:tpl.entries.length, turrets:list.filter(e => TURRET_KINDS.includes(e.kind)).length, pillars:list.filter(e => e.kind === 'pillar').length};
+  };
+  const {f, m} = tallestThatFits(lo, want, measure, over);
+  load(f, false);
+  V3.lastCur = null; fit3D(); rebuild3D();
+  $(out).innerHTML = `<p>${say(f, m)}` + (m.pillars ? ` Includes ${m.pillars.toLocaleString()} pillars down to the ground.` : '')
+    + (f < want ? ` Lowered from ${want} floors to stay within ${fit === 'one' ? 'one template and ' : ''}your ${TURRET_CAP}-turret cap.` : '')
+    + (over(m) ? ` <span class="checkBad">${stuck}${m.pillars ? ' Flatter ground under it needs fewer pillars.' : ''}</span>` : '') + '</p>';
 }
 $('genBtn').onclick = () => {
   const {mid, outer, floors, opt} = genOptions(), fit = $('genFit').value;
   if(outer && outer < mid + 4) return $('genOut').innerHTML = `<p class="checkBad">The outer cage has to be at least 4 wider than the middle tower (${mid + 4} or more).</p>`;
-  const over = x => x.turrets > TURRET_CAP || (fit === 'one' && x.pieces > TPL_CAP);
-  const {f, m} = tallestThatFits(4, clamp(floors, 4, MAX_FLOORS - 10), h => genMeasure(mid, outer, h, opt), over);
-  loadCoreCage(mid, outer, f, {...opt, name:`${opt.core ? '2x2 core in a ' : ''}${mid}x${mid} tower${outer ? ` in ${outer}x${outer} cage` : ''}, ${f} floors`});
-  V3.lastCur = null; fit3D(); rebuild3D();
-  $('genOut').innerHTML = `<p>Built <b>${f}</b> floors: ${m.pieces.toLocaleString()} pieces, ${m.turrets} turrets.`
-    + (f < floors ? ` Lowered from ${floors} to stay within ${fit === 'one' ? 'one template and ' : ''}your ${TURRET_CAP}-turret cap.` : '')
-    + (over(m) ? ' <span class="checkBad">Still over your limits even at 4 floors: try fewer turret rows or a smaller cage.</span>' : '') + '</p>';
+  const name = f => `${opt.core ? '2x2 core in a ' : ''}${mid}x${mid} tower${outer ? ` in ${outer}x${outer} cage` : ''}, ${f} floors`;
+  runGenerator({load:(f, dry) => loadCoreCage(mid, outer, f, {...opt, dry, name:name(f)}), lo:4, want:clamp(floors, 4, MAX_FLOORS - 10), fit, out:'genOut',
+    say:(f, m) => `Built <b>${f}</b> floors: ${m.pieces.toLocaleString()} pieces, ${m.turrets} turrets.`,
+    stuck:'Still over your limits even at 4 floors: try fewer turret rows or a smaller cage.'});
 };
 
 
@@ -6401,15 +6602,10 @@ function twOptions(){
 }
 $('twHang').value = HANG_MODE;
 $('twBtn').onclick = () => {
-  const o = twOptions(), fit = $('twFit').value, want = clamp(o.floors, 1, MAX_FLOORS);
-  const measure = f => { loadTurretWall({...o, floors:f, dry:true}); const {tpl, list} = build(); return {pieces:tpl.entries.length, turrets:list.filter(e => TURRET_KINDS.includes(e.kind)).length}; };
-  const over = m => m.turrets > TURRET_CAP || (fit === 'one' && m.pieces > TPL_CAP);
-  const {f, m} = tallestThatFits(1, want, measure, over);
-  loadTurretWall({...o, floors:f});
-  V3.lastCur = null; fit3D(); rebuild3D();
-  $('twOut').innerHTML = `<p>Built a wall <b>${clamp(o.len, 2, MAX_N - 4)}</b> foundations long and <b>${f}</b> ${f === 1 ? 'floor' : 'floors'} high: ${m.pieces.toLocaleString()} pieces, ${m.turrets} turrets.`
-    + (f < want ? ` Lowered from ${want} floors to stay within ${fit === 'one' ? 'one template and ' : ''}your ${TURRET_CAP}-turret cap.` : '')
-    + (over(m) ? ' <span class="checkBad">Still over your limits at 1 floor: make it shorter or space the turrets out more.</span>' : '') + '</p>';
+  const o = twOptions(), L = clamp(o.len, 2, MAX_N - 4);
+  runGenerator({load:(f, dry) => loadTurretWall({...o, floors:f, dry}), lo:1, want:clamp(o.floors, 1, MAX_FLOORS), fit:$('twFit').value, out:'twOut',
+    say:(f, m) => `Built a wall <b>${L}</b> foundations long and <b>${f}</b> ${f === 1 ? 'floor' : 'floors'} high: ${m.pieces.toLocaleString()} pieces, ${m.turrets} turrets.`,
+    stuck:'Still over your limits at 1 floor: make it shorter or space the turrets out more.'});
 };
 
 
