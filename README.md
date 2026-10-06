@@ -17,8 +17,13 @@ A browser-based 3D planner for designing bases in **ARK: Survival Ascended**. Pl
 - **Box select:** in Select mode, click and drag a box round any part of the build (or all of it) to select everything inside, on every floor that's showing
 - **Controls you can change:** every shortcut key can be rebound (handy on AZERTY keyboards), plus camera, zoom and walk-look speed and mouse invert, saved in the browser
 - **Contact form:** messages go to the site's Netlify Forms page (turn on form detection and an email notification in Netlify to get them in your inbox)
-- **Template import and export:** copy the finished design as Template Hammer code, or import an existing template to edit it
-- **Example designs** (core cage tower, turret spire, cage tower) to start from
+- **Template import and export:** copy the finished design as Template Hammer code, or import a template and drop it onto what you've already built; imported pieces keep their paint, skins and mod paths
+- **Move and copy parts:** pick up a selection (or the whole build), turn or mirror it while holding it, and drop it anywhere; copy the Template Hammer code for just the selected part
+- **Pieces list:** totals for every piece against the turret cap and the 2,000-piece template limit; click a row to select those pieces
+- **Hover tips:** hover a tool for a one-line "what to do" and a short looping clip of it (can be switched off in Controls)
+- **First-time tour:** a short spotlight tour of the planner on the first visit, which can be taken again from the Guide
+- **Illustrated guide** with pictures and clips of each tool
+- **Example designs** for PvP (core cage tower, turret spire, cage tower) and PvE to start from
 
 ## Built with
 
