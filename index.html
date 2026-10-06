@@ -1687,6 +1687,7 @@ let HANG_MODE = 'post';
 try { HANG_MODE = localStorage.getItem('asa-base-planner:hang') || 'post'; } catch(_) {}
 // Put a centred sideways turret onto a post instead. Going round a build clockwise, each frame uses the post it's
 // entered by: turrets end up evenly spaced, and a corner never gets two.
+const hasPosts = type => type === 'dframe' || type === 'ddoor';          // double doorframes: a turret can hang on either post
 function applyPost(f){
   const yaw = normYaw(Math.round(f.yaw)), side = (yaw === -90 || yaw === 0) ? -1 : 1, vert = Math.abs(Math.cos(f.yaw*Math.PI/180)) > 0.5;
   if(vert) f.y += side*CAL.postAlong; else f.x += side*CAL.postAlong;
@@ -2084,7 +2085,7 @@ function applyMount(f, ed, mode){
   if(mode === 'face'){
     f.x = Math.round(ed.x + Math.cos(a)*CAL.faceOut); f.y = Math.round(ed.y + Math.sin(a)*CAL.faceOut);
     f.base = 'wallface'; f.yaw = ed.yaw; f.pitch = -90; f.roll = 0; f.noBack = false;
-    if(HANG_MODE === 'post' && ed.type === 'dframe') applyPost(f);
+    if(HANG_MODE === 'post' && hasPosts(ed.type)) applyPost(f);
   } else if(ed.type === 'beam'){
     f.x = ed.x; f.y = ed.y; f.base = 'beamtop'; f.yaw = faceOut(ed); f.pitch = 0; f.roll = 0;
   } else {
@@ -2661,13 +2662,53 @@ function importItems(raw, opt = {}){
     }
     loose.push({p, s});
   }
+  const rest = [];
   for(const {p, s} of loose){
     if(p.path === P.ddoor && !p.extra && square(p) && H === 1 && near(p.z, 240 + 300*s)){   // a double door in an imported double doorframe
       const k = `${s}|${keyAt({t:'e', x:p.x, y:p.y})}`, ed = edges.get(k);
       if(ed && ed.type === 'dframe' && !ed.gx && near(ed.x, p.x) && near(ed.y, p.y)){ ed.type = 'ddoor'; continue; }
     }
+    rest.push({p, s});
+  }
+  // Turrets hanging sideways on a wall or doorframe become the planner's own sideways turrets, so "Switch the ones
+  // already placed" and the thatch setting work on them too. A thatch wall behind one centred in a doorframe is the
+  // stand-in the planner itself exports: it goes back to being that doorframe.
+  const hung = new Map();                                                  // `${floor}|${edge key}` -> centred in its opening?
+  if(H === 1) for(const r of rest){
+    const {p} = r, kind = !p.extra && KIND[p.path];
+    if(!kind || !near(p.pitch, -90) || !near(p.roll, 0) || Math.abs(p.yaw/90 - Math.round(p.yaw/90)) > 0.01) continue;
+    const a = p.yaw*D2R, vert = Math.abs(Math.cos(a)) > 0.5;
+    const bx = p.x - Math.cos(a)*CAL.faceOut, by = p.y - Math.sin(a)*CAL.faceOut;      // the face it's mounted on
+    const s = Math.round((p.z - 240 - CAL.faceUp)/300);
+    if(s < 0 || !near(p.z, 240 + CAL.faceUp + 300*s) || !(vert ? onGrid(bx + 150) : onGrid(by + 150))) continue;
+    const ex = vert ? bx : Math.round(bx/300)*300, ey = vert ? Math.round(by/300)*300 : by, off = Math.abs(vert ? by - ey : bx - ex);
+    const centred = off < 1, onPost = Math.abs(off - CAL.postAlong) < 1;
+    if(!centred && !onPost) continue;
+    const k = `${s}|${keyAt({t:'e', x:ex, y:ey})}`;
+    r.hang = {k, s, centred};
+    if(centred) hung.set(k, true); else if(!hung.has(k)) hung.set(k, false);
+  }
+  const typeAbove = k => {                                                 // a stand-in's doorframe: the same as the one above or below it
+    const [s, key] = k.split('|');
+    for(let d = 1; d < 40; d++) for(const t of [+s - d, +s + d]){ const ed = edges.get(`${t}|${key}`); if(ed && ed.type !== 'wall' && ed.type !== 'beam') return ed.type === 'ddoor' ? 'dframe' : ed.type; }
+    return 'dframe';
+  };
+  for(const r of rest){
+    const {p, s} = r;
+    if(p.path !== P.thatch || p.extra || !square(p) || H !== 1 || !near(p.z, 240 + 300*s)) continue;
+    const it = {t:'e', s, x:p.x, y:p.y}, v = onGrid(p.x + 150) && onGrid(p.y), h = onGrid(p.x) && onGrid(p.y + 150);
+    if(!v && !h) continue;
+    const k = `${s}|${keyAt(it)}`;
+    if(!hung.get(k)) continue;                                             // only behind a centred sideways turret
+    r.drop = true;
+    if(!edges.has(k)) edges.set(k, {t:'e', s, type:typeAbove(k), x:Math.round((p.x + (v ? 150 : 0))/300)*300 - (v ? 150 : 0), y:Math.round((p.y + (h ? 150 : 0))/300)*300 - (h ? 150 : 0)});
+  }
+  for(const r of rest) if(r.hang && !edges.has(r.hang.k)) r.hang = null;   // hanging on nothing the planner knows: keep it exactly as it is
+  for(const {p, s, hang, drop} of rest){
+    if(drop) continue;
     const kind = (!p.extra && KIND[p.path]) || 'custom';
     const f = {kind, path:kind === 'custom' ? p.path : '', x:p.x, y:p.y, lvl:s, base:'surface', zOff:0, yaw:p.yaw, pitch:p.pitch, roll:p.roll};
+    if(hang){ f.lvl = hang.s; f.base = 'wallface'; f.noBack = !hang.centred; }
     if(kind === 'custom' && /Pillar_Flat/i.test(p.path) && !p.pitch && !p.roll && s >= 1 && near(p.z, 90 + 300*s*H)){ f.lvl = s - 1; f.base = 'beamtop'; }   // lying on the walls below
     f.zOff = Math.round((p.z - freeZ(f))*1000)/1000;
     if(p.extra) f.extra = p.extra;
@@ -5123,7 +5164,7 @@ function turretFill(){
       else {
         applyMount(f, ed, 'face');
         if(where === 'inside'){ const a = normYaw(f.yaw + 180); f.yaw = a; f.x = Math.round(ed.x + Math.cos(a*D2R)*CAL.faceOut); f.y = Math.round(ed.y + Math.sin(a*D2R)*CAL.faceOut);
-          f.noBack = false; if(HANG_MODE === 'post' && ed.type === 'dframe') applyPost(f); }
+          f.noBack = false; if(HANG_MODE === 'post' && hasPosts(ed.type)) applyPost(f); }
         f.zOff = 300*i;
       }
       if(S.free.some(q => q.lvl === s && q.base === f.base && Math.abs(q.x - f.x) < 15 && Math.abs(q.y - f.y) < 15 && (+q.zOff || 0) === f.zOff)){ skipped++; continue; }
@@ -6102,7 +6143,7 @@ $('genBtn').onclick = () => {
 const HANG_NOTES = {post:'Turrets hang on one of the frame\u2019s two posts, so the doorframe holds them: no thatch walls to swap later.',
   thatch:'Turrets hang in the middle of the opening. The template puts a thatch wall behind each one so it can place; swap those for doorframes once the turrets are up.'};
 function showHang(){ $('hangMode').value = HANG_MODE; $('genHang').value = HANG_MODE; $('hangNote').textContent = HANG_NOTES[HANG_MODE]; }
-// move every sideways turret already on a double doorframe to the other way of hanging
+// move every sideways turret already on a double doorframe (with or without its doors) to the other way of hanging
 function switchHangs(mode){
   let n = 0;
   for(const f of S.free){
@@ -6111,7 +6152,7 @@ function switchHangs(mode){
     const bx = f.x - Math.cos(a)*CAL.faceOut, by = f.y - Math.sin(a)*CAL.faceOut;         // the wall it's on
     const ex = vert ? bx : Math.round(bx/300)*300, ey = vert ? Math.round(by/300)*300 : by;
     const key = vert ? `v,${Math.round((ex + 150)/300)},${Math.round(ey/300)}` : `h,${Math.round(ex/300)},${Math.round((ey + 150)/300)}`;
-    if(!S.edges[lv] || S.edges[lv].get(key) !== 'dframe') continue;
+    if(!S.edges[lv] || !hasPosts(S.edges[lv].get(key))) continue;
     f.x = Math.round(ex + Math.cos(a)*CAL.faceOut); f.y = Math.round(ey + Math.sin(a)*CAL.faceOut); f.noBack = false;
     if(mode === 'post') applyPost(f);
     n++;
@@ -6274,11 +6315,11 @@ function snapCandidates(h){
         for(const side of ['out', 'in']){
           const f = base(F); applyMount(f, ed, 'face'); f.zOff = 300*row;
           if(side === 'in'){ const a2 = normYaw(f.yaw + 180); f.yaw = a2; f.x = Math.round(ed.x + Math.cos(a2*D2R)*CAL.faceOut); f.y = Math.round(ed.y + Math.sin(a2*D2R)*CAL.faceOut); f.noBack = false; }
-          if(hoveredType === 'dframe' && HANG_MODE === 'post'){              // either post of a double doorframe
+          if(hasPosts(hoveredType) && HANG_MODE === 'post'){                // either post of a double doorframe
             const vert = Math.abs(Math.cos(f.yaw*D2R)) > 0.5, cx0 = Math.round(ed.x + Math.cos(f.yaw*D2R)*CAL.faceOut), cy0 = Math.round(ed.y + Math.sin(f.yaw*D2R)*CAL.faceOut);
             for(const s of [-1, 1]){ const g = {...f, x:vert ? cx0 : cx0 + s*CAL.postAlong, y:vert ? cy0 + s*CAL.postAlong : cy0, noBack:true};
               out.push({t:{mode:'free', f:g}, p:{x:g.x, y:g.y, z:mid(F) + 300*row}}); }
-          } else { if(hoveredType === 'dframe') f.noBack = false; out.push({t:{mode:'free', f}, p:{x:f.x, y:f.y, z:mid(F) + 300*row}}); }
+          } else { if(hasPosts(hoveredType)) f.noBack = false; out.push({t:{mode:'free', f}, p:{x:f.x, y:f.y, z:mid(F) + 300*row}}); }
         }
       }
     }
