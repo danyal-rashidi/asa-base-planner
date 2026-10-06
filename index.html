@@ -390,6 +390,7 @@ button:hover:not(:disabled){filter:brightness(.97)}
 .view3d[data-mode="select"]{--mc:var(--m-select)} .view3d[data-mode="delete"]{--mc:var(--m-delete)} .view3d[data-mode="camera"]{--mc:var(--m-camera)}
 .selcard{border-top:4px solid var(--m-select);padding-top:9px}
 .selcard.groundcard{border-top-color:#7d9a52}
+.gpost{fill:var(--muted)}
 .groundcard [data-gtool][aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:#fff}
 .pieces3d{border-top:4px solid var(--m-pieces)}
 
@@ -1240,7 +1241,7 @@ figure.shot.wide{margin:14px 0 6px}
             <label>X<input type="number" id="fX" step="1"></label>
             <label>Y<input type="number" id="fY" step="1"></label>
             <label>Sits on
-              <select id="fBase"><option value="surface">Floor surface</option><option value="walltop">Top of walls</option><option value="beamtop">Top of beams</option><option value="wallface">Side of wall</option></select></label>
+              <select id="fBase"><option value="surface">Floor surface</option><option value="walltop">Top of walls</option><option value="beamtop">Top of beams</option><option value="wallface">Side of wall</option><option value="ground" hidden>The ground</option></select></label>
             <label>Height offset<input type="number" id="fZ" step="1"></label>
             <label>Rotation (yaw)<input type="number" id="fYaw" step="1"></label>
             <label>Final height<input type="text" id="fFinal" readonly></label>
@@ -1457,6 +1458,7 @@ figure.shot.wide{margin:14px 0 6px}
     <dt><span class="modeTag" style="--m:var(--m-select)">Select · <span data-k="select">V</span></span></dt><dd>Click a piece to select it, Shift-click to add more. Drag a box to select everything inside it, even hidden pieces. Double-click selects a whole floor. Drag a selected turret to move it.</dd>
     <dt><span class="modeTag" style="--m:var(--m-delete)">Delete · <span data-k="delete">X</span></span></dt><dd>Removes what you click, or hold and drag across a row of pieces.</dd>
     <dt><span class="modeTag" style="--m:var(--m-camera)">Camera · <span data-k="camera">H</span></span></dt><dd>Drag to turn the view. In any tool, right-drag also turns it, scroll zooms, middle-drag pans, and <span data-k="fwd">W</span> <span data-k="left">A</span> <span data-k="back">S</span> <span data-k="right">D</span> or the arrow keys move around (hold Shift to go faster).</dd>
+    <dt><span class="modeTag" style="--m:#7d9a52">Ground · <span data-k="ground">N</span></span></dt><dd>Shape the ground like your spot in ARK: pick Slope, Cliff, Hill or Dip, or drag to raise, lower or flatten it. Your base stays level, and pillars reach down to the ground and go into the template.</dd>
     <dt><span class="modeTag" style="--m:var(--m-walk)">Walk · <span data-k="walk">G</span></span></dt><dd>Walk through your base in first person. Click builds, right-click or <span data-k="walkRemove">X</span> removes, <span data-k="fly">F</span> flies, <span data-k="walkBuild">B</span> turns building off, Esc leaves.</dd>
     <dt><span class="modeTag" style="--m:var(--cyan)">Hotbar · 1–0</span></dt><dd>Shows while you walk. Number keys pick a piece; press <span data-k="hotbarEdit">I</span> (or click Edit), then a slot, to change it.</dd>
     <dt><span class="modeTag" style="--m:var(--cyan)">Controls</span></dt><dd>The keyboard button above the 3D view lets you change any key and the mouse settings.</dd>
@@ -1512,6 +1514,7 @@ figure.shot.wide{margin:14px 0 6px}
     <li>Click <b>Copy template code</b> at the top of the page.</li>
     <li>In game, open the Template Hammer's import and paste the code.</li>
     <li>Place the template where you want the base.</li>
+    <li>Shaped the ground? Aim at the pin in the middle; the pillars underneath are part of the template.</li>
     <li>Over 2,000 pieces? The code splits into <b>Copy part 1</b>, <b>Copy part 2</b> and so on. Place part 1, then each next part on top.</li>
     <li>If you hung turrets sideways, each one has a thatch wall behind it. Swap those for metal doorframes once the turrets are up.</li>
   </ol>
@@ -2123,6 +2126,12 @@ function render(opts={}){
     const [c,r] = q.split(',').map(Number);
     h += `<rect class="post" x="${P+c*C-5}" y="${P+r*C-5}" width="10" height="10" rx="2"/>`;
   }
+  if(s === 0 && !roof && S.ter){                                            // corners with pillars down to the ground
+    groundCtx(); const per = new Map();
+    for(const p of pillarStacks()){ const q = `${Math.round((p.x + 150)/300)},${Math.round((p.y + 150)/300)}`; per.set(q, (per.get(q) || 0) + 1); }
+    for(const [q, n] of per){ const [c, r] = q.split(',').map(Number);
+      h += `<rect class="post gpost" x="${P + c*C - 5}" y="${P + r*C - 5}" width="10" height="10" rx="5"><title>${n} ${n === 1 ? 'pillar' : 'pillars'}</title></rect>`; }
+  }
   if(S.imp){
     const L = curLvl();
     for(const e of S.imp.items){
@@ -2305,6 +2314,7 @@ svg.addEventListener('pointerdown', e => {
         if(!ed){ flashHint(isRoof() ? 'The roof has no walls. Switch Snap or pick a floor tab.' : 'Click closer to a wall or doorframe on this floor.'); e.preventDefault(); return; }
         applyMount(f, ed, S.snap === 'face' ? 'face' : 'top');
       } else f.yaw = outwardYaw(f.x, f.y);
+      if(S.ter && f.lvl === 0 && f.base === 'surface') f.gnd = true;     // on shaped ground (a foundation under it still wins)
       S.free.push(f); S.sel = f.id; drag = {id:f.id, dx:0, dy:0};
     }
     e.preventDefault(); render(); return;
@@ -2358,7 +2368,9 @@ function syncInspector(){
   const pi = CUSTOM_PRESETS.findIndex(p => p[1] && p[1]===f.path);
   $('fPreset').value = pi>=0 ? pi : CUSTOM_PRESETS.length-1;
   $('fPath').value = f.path || '';
-  $('fX').value = f.x; $('fY').value = f.y; $('fBase').value = f.base;
+  $('fX').value = f.x; $('fY').value = f.y;
+  $('fBase').querySelector('[value="ground"]').hidden = !(S.ter && f.lvl === 0);
+  $('fBase').value = f.gnd && f.lvl === 0 && f.base === 'surface' ? 'ground' : f.base;
   $('fZ').value = f.zOff; $('fYaw').value = f.yaw;
   $('fPitch').value = f.pitch || 0; $('fRoll').value = f.roll || 0;
   $('fFinal').value = outZ(freeZ(f)) - LAST_ANCHOR.cz;
@@ -2374,7 +2386,7 @@ $('fPreset').onchange = e => editSel(f => { const p = CUSTOM_PRESETS[+e.target.v
 $('fPath').oninput = e => editSel(f => { f.path = e.target.value.trim(); });
 $('fX').oninput = e => editSel(f => { f.x = +e.target.value || 0; });
 $('fY').oninput = e => editSel(f => { f.y = +e.target.value || 0; });
-$('fBase').onchange = e => editSel(f => { f.base = e.target.value; });
+$('fBase').onchange = e => editSel(f => { const v = e.target.value; if(v === 'ground'){ f.base = 'surface'; f.gnd = true; } else { f.base = v; delete f.gnd; } });
 $('fZ').oninput = e => editSel(f => { f.zOff = +e.target.value || 0; });
 $('fYaw').oninput = e => editSel(f => { f.yaw = +e.target.value || 0; });
 $('fPitch').oninput = e => editSel(f => { f.pitch = +e.target.value || 0; });
@@ -4048,7 +4060,7 @@ function rebuild3D(){
     im.castShadow = mk !== 'r'; im.receiveShadow = true;
     SCENE.add(im); MESHES.push(im);
   }
-  syncTerrain3D();
+  syncTerrain3D(); dropStaleCoverage();
   // the sun's shadow box follows the build
   if(x0 === Infinity){ x0 = 0; x1 = S.N*300; y0 = 0; y1 = S.N*300; }
   const cx = (x0 + x1)/2, cy = -(y0 + y1)/2, R = Math.max(1500, Math.hypot(x1 - x0, y1 - y0, z1 - z0)/2 + 600);
@@ -4174,6 +4186,12 @@ function planeHitPt(e, s){
   return {x:hit.x, y:-hit.y};
 }
 const planeHit = e => planeHitPt(e, isRoof() ? S.stories : S.cur);
+// floor 0 under the pointer: the platform level or the shaped ground, whichever the ray meets first
+function floorHitPt(e){
+  const p = planeHitPt(e, 0); if(!S.ter) return p;
+  const g = groundHit(e); if(!g) return p; if(!p) return {x:g.x, y:g.y};
+  return g.dist < CAM.position.distanceTo(new THREE.Vector3(p.x, -p.y, surfZ(0))) ? {x:g.x, y:g.y} : p;
+}
 // the first piece under the cursor, with the point and the face direction in planner coordinates
 let RH = {key:null, hits:null};
 function rayHits(e){
@@ -4258,7 +4276,7 @@ function structPick(e, hit, wantCell){
       pt = {x:p.x + n.x*60, y:p.y + n.y*60};                              // the square or edge on the side you clicked
     }
   }
-  if(!pt){ F = 0; pt = planeHitPt(e, 0); }                            // nothing under the cursor: the ground
+  if(!pt){ F = 0; pt = floorHitPt(e); }                               // nothing under the cursor: the ground
   if(!pt) return null;
   return {F, pt};
 }
@@ -4314,7 +4332,7 @@ function target3DFree(e, ignoreFree, placeKind){
     const lvlOf = F => (S.roof && F === S.stories) ? 'roof' : F;
     if(S.snap === 'edge' || S.snap === 'face'){                             // forced wall snapping, on the floor you clicked
       const F = clamp(hit ? (hit.o.lv ?? zFloor(hit.p.z)) : 0, 0, S.stories - 1);
-      const pt = hit ? hit.p : planeHitPt(e, 0); if(!pt) return null;
+      const pt = hit ? hit.p : floorHitPt(e); if(!pt) return null;
       const ed = nearestEdgeOn(F, pt, mountMode());
       if(!ed) return {mode:'miss', msg:'Click closer to a wall or doorframe.'};
       const f = blank(F); applyMount(f, ed, mountMode()); return {mode:'free', f};
@@ -4326,6 +4344,8 @@ function target3DFree(e, ignoreFree, placeKind){
       if(ed){ const f = blank(top.s); applyMount(f, ed, 'top'); return {mode:'free', f}; }
     }
     if(!hit){
+      if(S.ter){ const g = groundHit(e);                                   // shaped ground: it stands on the ground under the cursor
+        if(g){ const w = snapWorld(g), f = blank(0); f.x = w.x; f.y = w.y; f.gnd = true; f.yaw = outwardYaw(f.x, f.y); return {mode:'free', f}; } }
       const pt = planeHitPt(e, 0); if(!pt) return null;                // nothing under the cursor: the ground
       const w = snapWorld(pt), f = blank(0); f.x = w.x; f.y = w.y; f.yaw = outwardYaw(f.x, f.y);
       return {mode:'free', f};
@@ -4610,18 +4630,20 @@ function move3D(e){
     const f = S.free.find(f => f.id === drag.id); if(!f) return;
     const t = target3D(e, true, f.kind); if(!t || t.mode !== 'free') return;
     const g = t.f;
-    if(['lvl','x','y','base','zOff','yaw','pitch','roll'].every(k => g[k] === f[k])) return;
+    if(['lvl','x','y','base','zOff','yaw','pitch','roll','gnd'].every(k => g[k] === f[k])) return;
     Object.assign(f, {lvl:g.lvl, x:g.x, y:g.y, base:g.base, zOff:g.zOff, yaw:g.yaw, pitch:g.pitch, roll:g.roll});
+    if(g.gnd) f.gnd = true; else delete f.gnd;
     S.cur = lvlIndex(f); drag.moved = true;
     setStatus(`Moving ${nameOf({kind:f.kind, path:f.path || PATHS()[f.kind] || ''})} · ${floorName(S.cur)}`);
     if(!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
     return;
   }
   if(paint){                                                          // painting stays on the floor you started on
-    let w = planeHit(e); if(!w) return;
+    const hitAt = ev => S.cur === 0 && !isRoof() ? floorHitPt(ev) : planeHit(ev);
+    let w = hitAt(e); if(!w) return;
     let k = paint.kind === 'cell' ? cellAt(w) : edgeAt(w);
     if(!k && paint.kind === 'cell' && S.cur === 0 && growGridFor(Math.round(w.x/300), Math.round(w.y/300))){   // painting past the edge
-      render(); w = planeHit(e); k = w && cellAt(w);
+      render(); w = hitAt(e); k = w && cellAt(w);
     }
     if(k && supported(paint.kind, S.cur, k) && (paint.kind === 'cell' ? applyCell(k) : applyEdge(k))) render();
   }
@@ -4682,7 +4704,7 @@ function ghostAt(e){
     m = ueMatrix(f.x, f.y, freeZ(f), f.pitch, f.yaw, f.roll)
       .multiply(new THREE.Matrix4().makeTranslation(0, 0, 50)).multiply(new THREE.Matrix4().makeScale(90, 90, 100));
     const cm = f.kind === 'custom' ? presetMeta(f.path) : {}, cname = f.kind === 'custom' ? ((CUSTOM_PRESETS.find(q => q[1] === f.path) || [])[0] || nameOf(f)) : S.piece.label;
-    const words = {wall:'in a wall spot', cell:cm.roof ? 'over the square' : 'on the square', corner:'at the corner', item:'on the floor'}[cm.place] || BASE_WORDS[f.base] || '';
+    const words = {wall:'in a wall spot', cell:cm.roof ? 'over the square' : 'on the square', corner:'at the corner', item:'on the floor'}[cm.place] || (f.gnd && !onFoundation(f.x, f.y) ? 'on the ground' : BASE_WORDS[f.base]) || '';
     msg = `Place ${cname} ${words} · ${where}`;
   } else if(t.mode === 'cell'){
     const [c, r] = t.key.split(',').map(Number);
@@ -4772,6 +4794,8 @@ function syncTerrain3D(){
   compensate(LAST_G.off);
   TER3.mesh.position.z = GROUND_Z + LAST_G.off; TER3.mesh.visible = true;
 }
+// coverage worked out on other ground would float or sink: it goes once the ground changes (press it again to redo it)
+function dropStaleCoverage(){ if(COV_MESH && COV_TER !== S.ter && !SCULPT.live) clearCoverage(); }
 // the land never jumps on screen: when the level moves, the camera moves with the land and the build visibly settles
 function compensate(off){
   if(TER3.off === null){ TER3.off = off; return; }                         // first draw: nothing to keep still
@@ -5602,8 +5626,8 @@ function buildColl(){
 function wcast(x, y, z, dx, dy, dz, far){
   if(!COLL) buildColl();
   const ox = x, oy = -y, oz = z, len = Math.hypot(dx, dy, dz), ux = dx/len, uy = -dy/len, uz = dz/len;
-  let best = uz < 0 ? (-12 - oz)/uz : Infinity;                             // the ground
-  if(best < 0) best = Infinity;
+  let best = uz < 0 ? ((S.ter ? groundZ(x, y) : GROUND_Z) - oz)/uz : Infinity;   // the ground
+  if(best < 0) best = S.ter && uz < 0 ? 0 : Infinity;                    // under shaped ground: back up onto it
   const {B, grid, seen} = COLL, st = ++COLL.stamp, reach = Math.min(far, 4000);
   const ex = ox + ux*reach, ey = oy + uy*reach;
   for(let gx = Math.floor(Math.min(ox, ex)/COL_W); gx <= Math.floor(Math.max(ox, ex)/COL_W); gx++)
@@ -5630,7 +5654,7 @@ function startWalk(){
   const xs = es.length ? es.map(e => e.x) : [S.N*150], ys = es.length ? es.map(e => e.y) : [S.N*150];
   WALK.x = (Math.min(...xs) + Math.max(...xs))/2; WALK.y = Math.max(...ys) + 700;   // just outside, facing the build
   WALK.yaw = -Math.PI/2; WALK.pitch = -0.04; WALK.vz = 0; WALK.fly = false; WALK.keys.clear();
-  const d = wcast(WALK.x, WALK.y, 40000, 0, 0, -1, 80000); WALK.z = d === Infinity ? -12 : 40000 - d;
+  const d = wcast(WALK.x, WALK.y, 40000, 0, 0, -1, 80000); WALK.z = d === Infinity ? groundZ(WALK.x, WALK.y) : 40000 - d;
   sculptEnd(true); $('groundCard').hidden = true;
   WALK.saved = {...cam}; WALK.on = true; $('view3d').classList.add('walking');
   HB_EDIT = false; closeHbMenu(); renderHotbar(); $('hbEdit').textContent = 'Edit';
@@ -5660,7 +5684,7 @@ function walkTick(t){
   applyCam(); syncHolo(); R3.render(SCENE, CAM);
   if(++WALK.tick % 15 === 0){
     const lv = clamp(Math.floor((WALK.z - 90 + 20)/(300*S.h)), 0, S.stories);
-    $('walkWhere').textContent = (WALK.fly ? 'Flying · ' : '') + (WALK.z < 60 ? 'Outside, on the ground' : floorName(lv));
+    $('walkWhere').textContent = (WALK.fly ? 'Flying · ' : '') + (WALK.z < (S.ter ? groundZ(WALK.x, WALK.y) : GROUND_Z) + 72 ? 'Outside, on the ground' : floorName(lv));
   }
   requestAnimationFrame(walkTick);
 }
@@ -5668,6 +5692,7 @@ function tryMove(dx, dy){
   const len = Math.hypot(dx, dy); if(!len) return;
   const ux = dx/len, uy = dy/len;
   for(const h of [STEP + 12, 172]) if(wcast(WALK.x, WALK.y, WALK.z + h, ux, uy, 0, RAD + len) < RAD + len) return;   // knee (above step height) and head
+  if(S.ter && !WALK.fly && groundZ(WALK.x + dx, WALK.y + dy) > WALK.z + STEP) return;   // up a slope, yes; up a cliff, no
   WALK.x += dx; WALK.y += dy;
 }
 function stepWalk(dt){
@@ -6051,7 +6076,7 @@ function walkAim(){
 function walkPlace(){
   if(!WALK.build) return flashHint(`Building is off. Press ${keyName(KEYS.walkBuild)} to turn it back on.`);
   if(HB_EDIT) return;
-  down3D(crosshairEvent()); paint = null; drag = null; walkAim();
+  const o = LAST_G.off; down3D(crosshairEvent()); paint = null; drag = null; walkAim(); levelHint(o);
 }
 function walkRemove(){
   if(!WALK.build) return flashHint(`Building is off. Press ${keyName(KEYS.walkBuild)} to turn it back on.`);
@@ -6153,6 +6178,7 @@ const CHECK_CATS = {
   hang:    'Turret hanging in an open doorframe',
   beamtop: 'Turret with no pillar under it',
   stand:   'Turret standing on nothing',
+  ground:  'In the ground',
 };
 function segOf(e){                                                          // a piece's top edge as a line: centre, direction, half length
   const sh = shapeOf(e), a = (e.yaw || 0)*D2R, ax = -Math.sin(a), ay = Math.cos(a);
@@ -6219,11 +6245,21 @@ function runCheck(){
       if(!solid && !onPost && !onFrame) out.hang.push(e);
     } else if(f && f.base === 'beamtop'){
       if(!beams.some(b => Math.abs(b.g.top + CAL.beamLift - e.z) < 3 && segDist(b.g, e.x, e.y) < 20)) out.beamtop.push(e);
-    } else if(f && f.base === 'surface' && !f.zOff){
+    } else if(f && f.base === 'surface' && !f.zOff && !f.gnd){
       const lv = f.lvl === 'roof' ? S.stories : f.lvl, k = `${Math.round(f.x/300)},${Math.round(f.y/300)}`;
       const cells = lv === S.stories && S.roof ? footprint(S.stories - 1) : S.cells[lv];
       if(!(cells && cells.has(k))) out.stand.push(e);
     }
+  }
+  if(S.ter) for(const e of es){                                           // pieces the shaped ground comes up into
+    const sh = shapeOf(e); if(e.auto || sh === 'bigpost' || e.kind === 'pillar') continue;      // pillars go into the ground on purpose
+    const wide = ['foundation', 'trifound', 'ceiling', 'triceil'].includes(sh);
+    const tall = ['wall', 'thatch', 'dframe', 'door', 'ddoor', 'railing', 'post', 'slopeL', 'slopeR', 'slopeLi', 'slopeRi', 'garage'].includes(sh);
+    const bottom = ['foundation', 'trifound'].includes(sh) ? e.z - 50 : wide ? e.z - 20 : tall ? e.z - 150 : e.z;
+    const a = (e.yaw || 0)*D2R, pts = [[e.x, e.y]];
+    if(wide) for(const [dx, dy] of [[-140, -140], [140, -140], [-140, 140], [140, 140]]) pts.push([e.x + dx, e.y + dy]);
+    if(tall && sh !== 'post') for(const q of [-140, 140]) pts.push([e.x - Math.sin(a)*q, e.y + Math.cos(a)*q]);
+    if(Math.max(...pts.map(([x, y]) => groundE(x, y))) - bottom > TER.buryMax) (out.ground = out.ground || []).push(e);
   }
   // show the results as groups you can hover and click, like the totals
   for(const id of Object.keys(EXTRA_GROUPS)) if(id.startsWith('chk:')) delete EXTRA_GROUPS[id];
@@ -6389,7 +6425,7 @@ $('learnReset').onclick = () => { Object.assign(CAL, CAL_DEFAULT); try { localSt
 
 /* ================= turret coverage: where attackers get shot, and how hard ================= */
 const RANGE_M = {low:20, medium:53, high:81};                              // turret range settings in metres (1 m = 100 units)
-let COV_MESH = null, COV_JOB = 0;
+let COV_MESH = null, COV_JOB = 0, COV_TER = null;                         // COV_TER: the ground it was worked out on
 function coverage(){
   if(!V3.ready) return;
   const job = ++COV_JOB, range = RANGE_M[$('covRange').value]*100;
@@ -6404,7 +6440,13 @@ function coverage(){
     return ceil ? [e.x - 150, e.y - 150, e.z - 20, e.x + 150, e.y + 150, e.z] : [e.x - hx, e.y - hy, e.z - 150, e.x + hx, e.y + hy, e.z + 150];
   });
   const xs = entries3D().map(e => e.x), ys = entries3D().map(e => e.y), pad = Math.min(range, 3000);
-  const x0 = Math.min(...xs) - pad, x1 = Math.max(...xs) + pad, y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad;
+  let x0 = Math.min(...xs) - pad, x1 = Math.max(...xs) + pad, y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad;
+  if(S.ter){ x0 = Math.floor((x0 + 150)/300)*300 - 150; y0 = Math.floor((y0 + 150)/300)*300 - 150; x1 = Math.ceil((x1 + 150)/300)*300 - 150; y1 = Math.ceil((y1 + 150)/300)*300 - 150; }   // on the ground's own squares
+  const terBlocked = (a, b) => {                                         // a hill in the way
+    if(!S.ter || Math.min(a.z, b.z) > LAST_G.maxE) return false;
+    for(let k = 1; k <= 8; k++){ const q = k/9; if(a.z + (b.z - a.z)*q < groundE(a.x + (b.x - a.x)*q, a.y + (b.y - a.y)*q)) return true; }
+    return false;
+  };
   const W = 72, H = Math.max(8, Math.round(W*(y1 - y0)/(x1 - x0))), grid = new Uint16Array(W*H);
   const blocked = (a, b) => solids.some(s => {
     let t0 = 0, t1 = 1; const d = [b.x - a.x, b.y - a.y, b.z - a.z], o = [a.x, a.y, a.z];
@@ -6422,12 +6464,13 @@ function coverage(){
     if(job !== COV_JOB) return;
     for(const end = Math.min(H, row + 6); row < end; row++) for(let i = 0; i < W; i++){
       const x = x0 + (i + 0.5)*(x1 - x0)/W, y = y0 + (row + 0.5)*(y1 - y0)/H;
-      const on = foot.has(`${Math.round(x/300)},${Math.round(y/300)}`), p = {x, y, z:on ? 250 : 150};
+      const on = foot.has(`${Math.round(x/300)},${Math.round(y/300)}`), p = {x, y, z:on ? 250 : groundE(x, y) + 150};
       let n = 0;
       for(const t of turrets){
         const dx = p.x - t.x, dy = p.y - t.y, dz = p.z - t.z, d = Math.hypot(dx, dy, dz);
         if(d > range) continue;
         if(t.side && (dx*t.fx + dy*t.fy) < -0.2*d) continue;               // sideways turrets can't swing round behind their wall
+        if(terBlocked(t, p)) continue;
         if(solids.length && blocked(t, p)) continue;
         n++;
       }
@@ -6446,8 +6489,15 @@ function coverage(){
     }
     if(COV_MESH){ SCENE.remove(COV_MESH); COV_MESH.geometry.dispose(); COV_MESH.material.map.dispose(); COV_MESH.material.dispose(); }
     const tex = new THREE.DataTexture(data, W, H, THREE.RGBAFormat); tex.needsUpdate = true; tex.magFilter = THREE.NearestFilter;
-    COV_MESH = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
-    COV_MESH.position.set((x0 + x1)/2, -(y0 + y1)/2, -8); SCENE.add(COV_MESH); frame3D();
+    if(S.ter){                                                           // draped over the ground, square for square
+      const xsG = [], ysG = []; for(let x = x0; x <= x1 + 1; x += 300) xsG.push(x); for(let y = y0; y <= y1 + 1; y += 300) ysG.push(y);
+      COV_MESH = new THREE.Mesh(gridGeometry(xsG, ysG, (i, j, x, y) => groundZ(x, y) + 6, (x, y) => [(x - x0)/(x1 - x0), 1 - (y - y0)/(y1 - y0)]),
+        new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2}));
+    } else {
+      COV_MESH = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
+      COV_MESH.position.set((x0 + x1)/2, -(y0 + y1)/2, -8);
+    }
+    COV_TER = S.ter; SCENE.add(COV_MESH); frame3D();
     $('covOut').innerHTML = `<p>Weakest spot within 15 m of the walls: <b>${weakNear === Infinity ? 0 : weakNear}</b> ${weakNear === 1 ? 'turret' : 'turrets'}.`
       + ` Whole coloured area: <b>${weakest}</b>.</p>`
       + `<div class="covKey"><span style="--c:#e6372d">none</span><span style="--c:#f08c28">1\u20132</span><span style="--c:#f0cd3c">3\u20135</span><span style="--c:#96cd5a">6\u201315</span><span style="--c:#3caa5a">16+</span></div>`
@@ -7125,7 +7175,7 @@ const TOUR_STEPS = [
   {t:'Welcome to ASA Base Planner', d:'Plan a base in 3D here, then paste it into ARK with the Template Hammer. Six quick stops show you around.'},
   {at:['#cats', '#pieces'], t:'Pick a piece', d:'Choose a tab, then a piece. Structure has foundations, walls and ceilings; Defense has the turrets.'},
   {at:['#view3d'], t:'Build in 3D', d:'Click the ground to lay foundations, and drag for a whole row. Click near a foundation’s edge for a wall. Right-drag turns the view, scroll zooms.'},
-  {at:['.tools3d'], t:'Your tools', d:'Build, Select, Delete, Camera and Walk. Hover any of them for a short clip of what it does.'},
+  {at:['.tools3d'], t:'Your tools', d:'Build, Select, Delete, Camera, Ground and Walk. Hover any of them for a short clip or tip.'},
   {at:['.tools3d [data-mode="select"]'], t:'Select, move and copy', d:'In Select, drag a box round part of your build. A card shows up to turn it, move it, copy it, or copy the code for just that part.'},
   {at:['.sideTabs'], t:'More in the side panel', d:'Build has the settings and whole-build tools, Create has the generators and import, and Check marks pieces that won’t place in game.'},
   {at:['#navCopy'], t:'Into ARK', d:'When it’s ready, click Copy template code and paste it into the Template Hammer’s import in game. Ready-made bases are under Examples.'},
