@@ -1461,7 +1461,7 @@ figure.shot.wide{margin:14px 0 6px}
     <li><b>Copy code</b> copies the Template Hammer code for just the selected part, to paste into the game on its own. The pillars under its beams, the thatch behind its sideways turrets and, if it reaches the top floor, the roof over it come along.</li>
     <li><b>Move</b> (<span data-k="move">T</span>) picks the section itself up: point where it goes and click. <span data-k="turn">R</span> turns it and <span data-k="mirror">M</span> mirrors it while you hold it, Esc puts it back.</li>
     <li><b>Whole build</b> (Build tab) turns, mirrors or moves everything at once.</li>
-    <li><b>Import a template</b> (Create tab): paste a Template Hammer export and click <b>Add to my build</b>. You hold the whole import like a paste, turn it with <span data-k="turn">R</span>, and click to drop it onto what you've built, on whatever floor you point at. Its foundations, walls, doorframes and ceilings become normal planner pieces you can build on; everything else (turrets, mod pieces, skins and paint) is kept exactly. <b>Replace my build</b> starts fresh from the import instead.</li>
+    <li><b>Add a template:</b> copy a Template Hammer code (from the game, a friend or a website) and press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the planner. Or paste it in the Create tab and click <b>Add to my build</b>. You hold the whole import like a paste, turn it with <span data-k="turn">R</span>, and click to drop it onto what you've built, on whatever floor you point at. Its foundations, walls, doorframes and ceilings become normal planner pieces you can build on; everything else (turrets, mod pieces, skins and paint) is kept exactly. <b>Replace my build</b> starts fresh from the import instead.</li>
     <li><b>Repeat up</b> stacks copies on top, which is the quickest way to build a tall tower.</li>
     <li><b>Turret wall generator</b> (Create tab) builds a straight wall of doorframes with turrets on it: choose its length and height, how far apart the turrets are, posts or thatch, and what goes on top. The turrets all go on the front.</li>
     <li><b>Tower generator</b> (side panel) builds a whole tower from a few choices, with or without the 2 × 2 core, and lowers the height by itself to stay inside your turret cap and one template.</li>
@@ -1505,7 +1505,7 @@ figure.shot.wide{margin:14px 0 6px}
     <tbody>
       <tr><td><kbd data-k="build">B</kbd> <kbd data-k="select">V</kbd> <kbd data-k="delete">X</kbd> <kbd data-k="camera">H</kbd> <kbd data-k="walk">G</kbd></td><td>Build, Select, Delete, Camera, Walk</td></tr>
       <tr><td><kbd data-k="turn">R</kbd> / <kbd data-k="mirror">M</kbd></td><td>Turn or mirror the selection (or the copy you're about to paste)</td></tr>
-      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy the selection and paste it in the planner. Ctrl+C also puts the Template Hammer code for just that part on your clipboard.</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy the selection and paste it. Ctrl+C also copies its Template Hammer code, and Ctrl+V adds any Template Hammer code you've copied to your build.</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Copy the selection and paste it straight away</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select everything you can see</td></tr>
       <tr><td><kbd>Delete</kbd></td><td>Delete the selection</td></tr>
@@ -3138,7 +3138,8 @@ async function copySelectionCode(btn){
   const r = selectionTemplate(sks);
   if(!r.n) return flashHint(r.old ? OLD_IMPORT_MSG : 'Nothing to copy there.');
   if(r.n > TPL_CAP) return flashHint(`That part has ${r.n.toLocaleString()} pieces; the Template Hammer takes at most ${TPL_CAP.toLocaleString()}. Select a smaller part.`);
-  const ok = await copyText(JSON.stringify(r.tpl, null, '\t'));
+  const code = JSON.stringify(r.tpl, null, '\t'), ok = await copyText(code);
+  if(ok) CLIP.code = code;
   flashHint(ok ? `Copied the code for just this part: ${r.n.toLocaleString()} ${r.n === 1 ? 'piece' : 'pieces'}. Paste it into the Template Hammer import.`
     + (r.old ? ` (${r.old} old imported ${r.old === 1 ? 'piece was' : 'pieces were'} left out: make them movable first.)` : '')
     : 'Couldn’t reach the clipboard. Use the Code tab instead.');
@@ -4732,7 +4733,7 @@ window.addEventListener('keydown', e => {
   if(mod && k === 'z'){ e.preventDefault(); return e.shiftKey ? redo() : undo(); }
   if(mod && k === 'y'){ e.preventDefault(); return redo(); }
   if(mod && k === 'c' && UI.sel.size){ e.preventDefault(); copySelection(); if(mySel().length) copySelectionCode().then(ok => { if(ok) flashHint(`Copied ${CLIP.items.length} ${CLIP.items.length === 1 ? 'piece' : 'pieces'}: Ctrl+V pastes them here, and the Template Hammer code for just this part is on your clipboard.`); }); return; }
-  if(mod && k === 'v' && V3.on){ e.preventDefault(); return startPaste(); }
+  if(mod && k === 'v' && V3.ok){ clearTimeout(CLIP.wait); CLIP.wait = setTimeout(() => { CLIP.wait = 0; startPaste(); }, 150); return; }   // the paste event below usually comes first
   if(mod && k === 'd' && UI.sel.size && V3.on){ e.preventDefault(); copySelection(); return startPaste(); }
   if(mod && k === 'a' && V3.on){ e.preventDefault(); setMode('select'); return selectAllVisible(); }
   if(mod || e.altKey) return;
@@ -4909,7 +4910,7 @@ function repeatUp(times){
 }
 
 /* ---- copy & paste ---- */
-const CLIP = {items:null};
+const CLIP = {items:null, code:'', wait:0};                               // code: the Template Hammer code Ctrl+C put on your clipboard
 function copySelection(){
   const sks = mySel();
   if(!sks.length) return flashHint(UI.sel.size ? OLD_IMPORT_MSG : 'Select some pieces first.');
@@ -4917,6 +4918,21 @@ function copySelection(){
   CLIP.items = items.map(it => ({...it, s:it.s - lo, x:it.x - px, y:it.y - py, f:it.f ? {...it.f, x:it.x - px, y:it.y - py} : undefined}));
   flashHint(`Copied ${CLIP.items.length} ${CLIP.items.length === 1 ? 'piece' : 'pieces'}. Press Ctrl+V to paste.`);
 }
+// Ctrl+V: a Template Hammer code on your clipboard (from the game, a friend, a website) is picked up so you can drop it
+// onto your build. Anything else pastes what you copied here in the planner.
+document.addEventListener('paste', e => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || (e.target && e.target.isContentEditable) || PAGE !== 'planner' || CTRL.open || TOUR.on || WALK.on || !V3.ok) return;
+  clearTimeout(CLIP.wait); CLIP.wait = 0;
+  e.preventDefault();
+  const text = String((e.clipboardData && e.clipboardData.getData('text')) || '').trim();
+  if(text && text !== CLIP.code.trim() && /^[[{]/.test(text) && !parseTemplate(text).err){
+    const msg = importAdd(text);
+    flashHint(msg); $('impNote').textContent = msg;
+    return;
+  }
+  startPaste();
+});
 // Holding pieces to put down somewhere: a paste, a move or an import. A see-through copy of the real pieces follows the
 // cursor, snapped to whole foundations, on the floor you point at.
 const PASTE = {on:false, items:null, group:null, mat:null, at:null, mode:'paste', move:null, skip:null, was:null, F:null, keep:null, tool:'build'};
@@ -4930,7 +4946,7 @@ function piecesSig(sks){
 }
 function startPaste(items, opt = {}){
   items = items || CLIP.items;
-  if(!items) return flashHint('Copy something first (select it, then Ctrl+C).');
+  if(!items) return flashHint('Nothing to paste yet: select some pieces and press Ctrl+C, or copy a Template Hammer code.');
   if(!V3.on){ if(V3.ok) setView('3d'); if(!V3.on || !V3.ready) return; }   // holding pieces only works in the 3D view
   endPaste();
   const tool = UI.mode;
